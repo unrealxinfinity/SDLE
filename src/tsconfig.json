@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target":"ESNext",
+        "module":"ESNext",
+        "outDir":"out",
+        "sourceMap":true,
+        "moduleResolution":"Node",
+        "skipLibCheck":true
+    }
+}
