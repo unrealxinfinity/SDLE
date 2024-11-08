@@ -10,10 +10,10 @@ const availableWorkers = [];
 async function clientProcess() {
     var sock = new zmq.Request();
     sock.connect(frontAddr);
-    await sock.send("HELLO");
+    await sock.send(process.env.ID);
     const msg = await sock.receive();
 
-    console.log("socket finished");
+    console.log(`socket ${process.env.ID} ended with ${msg.toString()}`);
     sock.close();
     cluster.worker.kill();
 }
@@ -23,14 +23,16 @@ async function workerProcess() {
     sock.connect(backAddr);
     sock.send('READY');
   
-    const msg = await sock.receive();
-    sock.send([msg[0], '', 'OK']);
+    for await (const msg of sock) {
+        sock.send([msg[0], '', `OK${msg[2].toString()}`]);
+    }
 }
   
 
 async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router) {
     for await (const msg of frontSvr) {
         const interval = setInterval(() => {
+            //console.log(availableWorkers);
             if (availableWorkers.length > 0 ) {
                 backSvr.send([availableWorkers.shift(), '', msg[0], '', msg[2]]);
                 clearInterval(interval);
@@ -42,7 +44,7 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router) {
 async function backend(backSvr: zmq.Router, frontSvr: zmq.Router) {
 
     for await (const msg of backSvr) {
-        availableWorkers.push(msg[0].toString())
+        availableWorkers.push(msg[0])
         if (msg[2].toString() !== "READY") {
             frontSvr.send([msg[2], msg[3], msg[4]])
         }
@@ -68,7 +70,8 @@ if (cluster.isPrimary) {
     "TYPE": 'worker'
   });
   for (var i = 0; i < clients; i++) cluster.fork({
-    "TYPE": 'client'
+    "TYPE": 'client',
+    "ID": i
   });
 
   cluster.on('death', function(worker) {
