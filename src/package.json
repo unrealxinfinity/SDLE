@@ -3,7 +3,8 @@
     "@types/node": "^22.8.7"
   },
   "dependencies": {
-    "undici": "^6.20.1"
+    "undici": "^6.20.1",
+    "zeromq": "^6.1.2"
   },
   "type": "module"
 }
