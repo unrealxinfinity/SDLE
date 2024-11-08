@@ -136,7 +136,7 @@ async function handleInput(rl : readline.Interface, state : state){
                         remItem(itemName, state);
                     }
                     else if(command == "sync" && answerArrayLength == 1){
-                        sync();
+                        //sync();
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
