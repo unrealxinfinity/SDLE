@@ -1,8 +1,8 @@
 
 //IDEA: each product keeps a vector of updating deltas for each instance for each add or remove operation.
 // On merge,the same product of different shopping lists will check for each instance and sum their operations(deltas) so the quantity maintains correct in a final vector of instances,
-// and if one vector(instances) have one extra entrie more than the other vector, the new value is added to the final vector of instances,
-// at the end the sum of all deltas are calculated and kept in a final vector of instances with that only entry for both of the same product from diff shopping lists. 
+// and if one vector(instances) have extra entries more than the other vector, the new values are added to the final vector of instances,
+// at the end the sum of all deltas are calculated and kept in a final vector of instances with an only entry of delta, for both the same product from diff shopping lists. 
 // This way one single instance is kept at the end of each merge for memory efficiency.
 class DeltaContext{
     private id:string;
