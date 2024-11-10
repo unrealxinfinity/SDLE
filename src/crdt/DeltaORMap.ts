@@ -1,11 +1,11 @@
 import { DeltaContext } from "./DeltaContext";
-
+// No approach for idempotence was implemented in the DeltaORMap class.
 class DeltaORMap {
   private delta:Map<string,DeltaContext>;
-  private name:string;
+  private id:string;
   private products:Map<string,number>;
   constructor(name:string) {
-    this.name = name;
+    this.id = name;
     this.delta = new Map<string,DeltaContext>();
     this.products = new Map<string,number>();
   }
@@ -24,8 +24,10 @@ class DeltaORMap {
     this.delta.get(item).add(-delta);
   }
   join(other:DeltaORMap){
+    // NEED TO IMPLEMENT IDEMPOTENCE CHECK
     const minDeltaMap = this.getDelta().size < other.getDelta().size ? this.getDelta() : other.getDelta();
     const maxDeltaMap = this.delta.size < other.delta.size ? other.delta : this.delta;
+    
     for (let [product, value] of maxDeltaMap) {
       if(minDeltaMap.has(product)){
         minDeltaMap.get(product).merge(maxDeltaMap.get(product));
@@ -53,6 +55,20 @@ class DeltaORMap {
         this.products.set(product,productQuantity+value.getDelta());
       }
     }
+  }
+  isSame(other: DeltaORMap): boolean {
+      let res = false;
+      if (this.id === other.id && this.products.size === other.products.size && this.delta.size === other.delta.size && this.getCausal()<=other.getCausal()) res = true;
+      for (let [product, value] of this.getDelta()) {
+        if (!value.isSameOperation(other.getDelta().get(product))) {
+          res = false;
+          break;
+        }
+      }
+      return res;
+  }
+  getCausal(){
+    return this.causal;
   }
   getDelta(){
     return this.delta;

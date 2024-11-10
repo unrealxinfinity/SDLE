@@ -18,10 +18,8 @@ class DeltaContext{
     }
     merge(other:DeltaContext){
         const finalContext = [];
-        // if the operations are the same, we don't need to join them for idempotence
-        if (this.isSameOperation(other)) {
-            return;
-        } 
+        // NEED TO IMPLEMENT IDEMPOTENCE CHECK
+        
         // Checks for the smallest context to know when to add new elements from the bigger context;
         const minContext = this.causalContext.length < other.causalContext.length ? this.causalContext: other.causalContext;
 
