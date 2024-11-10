@@ -58,7 +58,7 @@ class DeltaORMap {
   }
   isSame(other: DeltaORMap): boolean {
       let res = false;
-      if (this.id === other.id && this.products.size === other.products.size && this.delta.size === other.delta.size && this.getCausal()<=other.getCausal()) res = true;
+      if (this.id === other.id && this.products.size === other.products.size && this.delta.size === other.delta.size) res = true;
       for (let [product, value] of this.getDelta()) {
         if (!value.isSameOperation(other.getDelta().get(product))) {
           res = false;
@@ -67,9 +67,7 @@ class DeltaORMap {
       }
       return res;
   }
-  getCausal(){
-    return this.causal;
-  }
+ 
   getDelta(){
     return this.delta;
   }
@@ -77,7 +75,7 @@ class DeltaORMap {
     return this.products;
   }
   getName(){
-    return this.name;
+    return this.id;
   }
   
   
