@@ -7,19 +7,26 @@
 class DeltaContext{
     private id:string;
     private causalContext:number[];
-    constructor(item:string){
+    private version:number;
+    constructor(item:string,context:number = 0){
         this.id = item;
         //initialize causal context with for the instance 0 (index 0);
         this.causalContext = [0];
+        this.version =context;
     }
     //adds a new delta value to the context (delta can be negative or positive);
     add(delta:number){
         this.causalContext.push(delta);
     }
-    merge(other:DeltaContext){
+    merge(other:Map<string,DeltaContext>){
+
+    
+
+    }
+
+    /*joinDeltas(other:DeltaContext){
         const finalContext = [];
         // NEED TO IMPLEMENT IDEMPOTENCE CHECK
-        
         // Checks for the smallest context to know when to add new elements from the bigger context;
         const minContext = this.causalContext.length < other.causalContext.length ? this.causalContext: other.causalContext;
 
@@ -38,10 +45,11 @@ class DeltaContext{
                 }
             }
         }
+        //Sums the final context with deltas for each instance and sets the final sum value;
         const sum = finalContext.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
         this.setCausalContext([sum]);
         other.setCausalContext([sum]);
-    }
+    }*/
     //checks if the operations are the same for idempotence
     isSameOperation(other: DeltaContext): boolean {
         return (
