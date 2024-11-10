@@ -19,7 +19,18 @@ async function clientProcess() {
   await sock.send(JSON.stringify(createMsg));
 
   const msg = await sock.receive();
-  console.log(`socket ${process.env.ID} ended with ${msg.toString()}`);
+  console.log(`socket ${process.env.ID} recieved list id ${msg.toString()}`);
+
+  const testMsg = {
+    type: "wololo",
+    list: msg.toString(),
+  };
+
+  await sock.send(JSON.stringify(testMsg));
+
+  const secondMsg = await sock.receive();
+  console.log(`socket ${process.env.ID} got a wololo ${secondMsg.toString()}`);
+
   sock.close();
   cluster.worker.kill();
 }
@@ -36,7 +47,14 @@ async function workerProcess() {
   sock.send(JSON.stringify(readyMsg));
 
   for await (const msg of sock) {
-    sock.send([msg[0], "", `OK${msg[2].toString()}`]);
+    const contents = JSON.parse(msg[2].toString());
+
+    const reply = {
+      type: contents.type,
+      message: `${contents.type} to you too`,
+      list: process.env.LIST
+    };
+    sock.send([msg[0], '', JSON.stringify(reply)]);
   }
 }
 
@@ -63,7 +81,7 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router) {
       }, 10);*/
 
       const interval = setInterval(() => {
-        if (mapping[contents.list].busy === false) {
+        if (mapping[contents.list]?.busy === false) {
           mapping[contents.list].busy = true;
           backSvr.send([mapping[contents.list].id, "", msg[0], "", msg[2]]);
           clearInterval(interval);
@@ -79,7 +97,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router) {
     if (msg[2].toString() !== "READY") {
       frontSvr.send([msg[2], msg[3], msg[4]]);
     }*/
-    const contents = JSON.parse(msg[2].toString());
+    const contents = JSON.parse(msg[msg.length - 1].toString());
 
     if (contents.type === "ready") {
       mapping[contents.list] = {
