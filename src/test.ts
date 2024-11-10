@@ -4,6 +4,12 @@ let list1 = new DeltaORMap("list1");
 let list2 = new DeltaORMap("list2");
 
 list1.add("banana");
+list2.add("banana");
+list1.join(list2);
 list2.join(list1);
+list2.join(list1);
+list2.add("banana");
+list1.join(list2);
+//list2.join(list1);
 console.log(list2.read("banana"));
 console.log(list1.read("banana"));

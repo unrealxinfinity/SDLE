@@ -18,11 +18,9 @@ class DeltaORMap {
     }
     this.delta.get(item).add(delta);*/
     if(!this.causalContext.get(this.id)[1].has(item)){
-      this.causalContext.get(this.id)[0] = 1;
       this.causalContext.get(this.id)[1].set(item,delta);
     }
     else{
-      this.causalContext.get(this.id)[0]++;
       this.causalContext.get(this.id)[1].set(item,this.causalContext.get(this.id)[1].get(item)+delta);
     }
   }
@@ -142,9 +140,7 @@ class DeltaORMap {
         otherIter++;
       }
     }  while (!(thisIter===thisEntries.length) || !(otherIter===otherEntries.length));
-    
-    this.mergeDeltaProductList(this.products,this.getCausal().get(this.getName())[1]);
-    
+      this.products = this.mergeDeltaProductList(this.causalContext.get(this.id),this.causalContext.get(other.getName()));
   }
   
   changeDeltaMapAt(listID:string,deltaMap:[number,Map<string,number>]){
@@ -155,8 +151,21 @@ class DeltaORMap {
     let [otherVersion,otherDeltaMap] = deltaMap;
     this.causalContext.set(listID,[otherVersion+1,otherDeltaMap]);
   }
-  mergeDeltaProductList(productList:Map<string,number>,deltaMap:Map<string,number>){
-  let entries = Array.from(deltaMap.entries());
+  mergeDeltaProductList(context:[number,Map<string,number>],context2:[number,Map<string,number>]){
+  let productList = new Map<string,number>();
+  let deltaMap = context[1];
+  let stubDeltaMap = this.copyMap(deltaMap);
+  let deltaMap2 = context2[1];
+  for (let [product, value] of deltaMap2) {
+    if(!stubDeltaMap.has(product)){
+      stubDeltaMap.set(product,value);
+    }
+    else{
+      stubDeltaMap.set(product,stubDeltaMap.get(product)+value);
+    }
+  }
+  context[0]++;
+  let entries = Array.from(stubDeltaMap.entries());
   for (let [product, value] of entries) {
       if(!productList.has(product)){
         if(value<0){
@@ -171,15 +180,13 @@ class DeltaORMap {
         productList.set(product,productQuantity+value);
       }
     }
+    return productList;
   }   
   copyMap(originalMap: Map<string, number>): Map<string, number> {
     return new Map(originalMap);
   }
   read(product:string){
-    const productViewer = this.copyMap(this.products);    
-    const delta = this.getCausal().get(this.getName())[1];
-    this.mergeDeltaProductList(productViewer,delta);
-    return productViewer.get(product);
+    return this.products.get(product);
   }
   /*
   joinDelta(other:DeltaORMap){
