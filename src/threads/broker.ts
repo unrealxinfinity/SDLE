@@ -51,6 +51,8 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router) {
         TYPE: "worker",
         LIST: listID,
       });
+
+      frontSvr.send([msg[0], "", listID]);
     } else {
       /*const interval = setInterval(() => {
         //console.log(availableWorkers);
