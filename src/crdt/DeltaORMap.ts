@@ -60,7 +60,6 @@ class DeltaORMap {
     other.sortCausalContextByKey();
     let thisEntries = Array.from(this.causalContext.entries());
     let otherEntries = Array.from(other.getCausal().entries());
-    this
 
     let thisIter = 0;
     let otherIter = 0;
