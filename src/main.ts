@@ -76,19 +76,7 @@ async function handleInput(rl : readline.Interface, state : state){
     }
 
     function sync(state : state){
-        const changes : Map<string, item> = new Map();
-
-        for(const item of state.items.values()){
-            if(!state.pre_sync_items.has(item.name)){
-                changes.set(item.name, item);
-            }
-        }
-
-        for(const item of state.pre_sync_items.values()){
-            if(!state.items.has(item.name)){
-                
-            }
-        }
+        //crdt
     }
 
 

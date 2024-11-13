@@ -64,8 +64,8 @@ class DeltaORMap {
     let thisIter = 0;
     let otherIter = 0;
     do{
-      let [thisListID, thisContext] = thisEntries[thisIter] || [];
-      let [otherListID, otherContext] = otherEntries[otherIter] || [];
+      let [thisListID, thisContext] = thisEntries[thisIter] ?? [];
+      let [otherListID, otherContext] = otherEntries[otherIter] ?? [];
 
       if (!(thisIter === thisEntries.length) && ( otherIter===otherEntries.length || thisListID < otherListID)) {
         if (other.contextInList(thisListID, this)) {
