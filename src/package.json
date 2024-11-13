@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "cluster": "^0.7.7",
+    "consistent-hash": "^1.2.2",
     "undici": "^6.20.1",
     "uuid": "^11.0.2",
     "zeromq": "^6.1.2"
