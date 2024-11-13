@@ -1,11 +1,12 @@
 {
   "devDependencies": {
+    "@types/hashring": "^3.2.5",
     "@types/node": "^22.8.7",
     "typescript": "^5.6.3"
   },
   "dependencies": {
     "cluster": "^0.7.7",
-    "consistent-hash": "^1.2.2",
+    "hashring": "^3.2.0",
     "undici": "^6.20.1",
     "uuid": "^11.0.2",
     "zeromq": "^6.1.2"
