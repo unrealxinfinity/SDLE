@@ -1,11 +1,12 @@
 import * as zmq from "zeromq";
 import cluster from "node:cluster";
 import { v4 as uuidv4 } from "uuid";
+import * as HashRing from "hashring";
 
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
-const workers = 3;
+const workers = 10;
 const availableWorkers = [];
 const mapping = {};
 
@@ -37,12 +38,11 @@ async function clientProcess() {
 
 async function workerProcess() {
   const sock = new zmq.Request();
-  sock.routingId = process.env.LIST;
+  sock.routingId = process.env.ID;
   sock.connect(backAddr);
 
   const readyMsg = {
     type: "ready",
-    list: process.env.LIST,
   };
   sock.send(JSON.stringify(readyMsg));
 
@@ -51,24 +51,18 @@ async function workerProcess() {
 
     const reply = {
       type: contents.type,
-      message: `${contents.type} to you too`,
-      list: process.env.LIST
+      message: `${contents.type} to you too`
     };
     sock.send([msg[0], '', JSON.stringify(reply)]);
   }
 }
 
-async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router) {
+async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: HashRing) {
   for await (const msg of frontSvr) {
     const contents = JSON.parse(msg[2].toString());
 
     if (contents.type == "create") {
       const listID = uuidv4();
-
-      cluster.fork({
-        TYPE: "worker",
-        LIST: listID,
-      });
 
       frontSvr.send([msg[0], "", listID]);
     } else {
@@ -80,10 +74,11 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router) {
         }
       }, 10);*/
 
+      const responsible = hashRing.get(contents.list);
       const interval = setInterval(() => {
-        if (mapping[contents.list]?.busy === false) {
-          mapping[contents.list].busy = true;
-          backSvr.send([mapping[contents.list].id, "", msg[0], "", msg[2]]);
+        if (mapping[responsible] === false) {
+          mapping[responsible] = true;
+          backSvr.send([responsible, "", msg[0], "", msg[2]]);
           clearInterval(interval);
         }
       }, 10);
@@ -100,25 +95,27 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router) {
     const contents = JSON.parse(msg[msg.length - 1].toString());
 
     if (contents.type === "ready") {
-      mapping[contents.list] = {
+      console.log("i got a ready");
+      mapping[msg[0].toString()] = false;
+      /*mapping[contents.list] = {
         id: msg[0],
         busy: false,
-      };
+      };*/
     } else {
-      mapping[contents.list].busy = false;
+      mapping[msg[0].toString()].busy = false;
       frontSvr.send([msg[2], msg[3], msg[4]]);
     }
   }
 }
 
-async function loadBalancer() {
+async function loadBalancer(hashRing: HashRing) {
   const backSvr = new zmq.Router();
   //backSvr.identity = 'backSvr' + process.pid
   await backSvr.bind(backAddr);
   const frontSvr = new zmq.Router();
   await frontSvr.bind(frontAddr);
 
-  await Promise.all([frontend(frontSvr, backSvr), backend(backSvr, frontSvr)]);
+  await Promise.all([frontend(frontSvr, backSvr, hashRing), backend(backSvr, frontSvr)]);
 }
 
 // Example is finished.
@@ -126,15 +123,24 @@ async function loadBalancer() {
 if (cluster.isPrimary) {
   // create the workers and clients.
   // Use env variables to dictate client or worker
-  /*for (var i = 0; i < workers; i++)
+
+  // @ts-expect-error
+  const hashRing = new HashRing.default([]) as HashRing;
+
+  for (var i = 0; i < workers; i++) {
+    const id = uuidv4();
+    hashRing.add(id);
+    mapping[id] = true;
     cluster.fork({
       TYPE: "worker",
-    });*/
-  for (var i = 0; i < clients; i++)
+      ID: id
+    });
+  }
+  /*for (var i = 0; i < clients; i++)
     cluster.fork({
       TYPE: "client",
       ID: i,
-    });
+    });*/
 
   cluster.on("death", function (worker) {
     console.log("worker " + worker.pid + " died");
@@ -149,7 +155,7 @@ if (cluster.isPrimary) {
     }
   });
 
-  await loadBalancer();
+  await loadBalancer(hashRing);
 } else {
   if (process.env.TYPE === "client") {
     await clientProcess();
