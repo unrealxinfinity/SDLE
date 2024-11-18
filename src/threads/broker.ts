@@ -102,7 +102,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router) {
         busy: false,
       };*/
     } else {
-      mapping[msg[0].toString()].busy = false;
+      mapping[msg[0].toString()] = false;
       frontSvr.send([msg[2], msg[3], msg[4]]);
     }
   }
