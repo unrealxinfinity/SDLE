@@ -1,5 +1,4 @@
 import * as zmq from "zeromq";
-import cluster from "node:cluster";
 
 const frontAddr = "tcp://127.0.0.1:12346";
 

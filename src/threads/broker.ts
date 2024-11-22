@@ -2,6 +2,7 @@ import * as zmq from "zeromq";
 import cluster from "node:cluster";
 import { v4 as uuidv4 } from "uuid";
 import * as HashRing from "hashring";
+import workerProcess from "./worker.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
@@ -9,53 +10,6 @@ const clients = 10;
 const workers = 10;
 const availableWorkers = [];
 const mapping = {};
-
-async function clientProcess() {
-  var sock = new zmq.Request();
-  sock.connect(frontAddr);
-  const createMsg = {
-    type: "create",
-  };
-
-  await sock.send(JSON.stringify(createMsg));
-
-  const msg = await sock.receive();
-  console.log(`socket ${process.env.ID} recieved list id ${msg.toString()}`);
-
-  const testMsg = {
-    type: "wololo",
-    list: msg.toString(),
-  };
-
-  await sock.send(JSON.stringify(testMsg));
-
-  const secondMsg = await sock.receive();
-  console.log(`socket ${process.env.ID} got a wololo ${secondMsg.toString()}`);
-
-  sock.close();
-  cluster.worker.kill();
-}
-
-async function workerProcess() {
-  const sock = new zmq.Request();
-  sock.routingId = process.env.ID;
-  sock.connect(backAddr);
-
-  const readyMsg = {
-    type: "ready",
-  };
-  sock.send(JSON.stringify(readyMsg));
-
-  for await (const msg of sock) {
-    const contents = JSON.parse(msg[2].toString());
-
-    const reply = {
-      type: contents.type,
-      message: `${contents.type} to you too`
-    };
-    sock.send([msg[0], '', JSON.stringify(reply)]);
-  }
-}
 
 async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: HashRing) {
   for await (const msg of frontSvr) {
@@ -160,7 +114,7 @@ if (cluster.isPrimary) {
   await loadBalancer(hashRing);
 } else {
   if (process.env.TYPE === "client") {
-    await clientProcess();
+    
   } else {
     await workerProcess();
   }
