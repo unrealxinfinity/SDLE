@@ -19,6 +19,15 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: Has
       const listID = uuidv4();
 
       frontSvr.send([msg[0], "", listID]);
+    } else if (contents.type == "kill") {
+      contents.workerIds = workerIds;
+      const interval = setInterval(() => {
+        if (mapping[contents.id] === false) {
+          mapping[contents.id] = true;
+          backSvr.send([contents.id, "", msg[0], "", JSON.stringify(contents)]);
+          clearInterval(interval);
+        }
+      }, 10);
     } else {
       /*const interval = setInterval(() => {
         //console.log(availableWorkers);
