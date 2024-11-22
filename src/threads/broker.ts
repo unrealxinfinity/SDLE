@@ -86,14 +86,16 @@ if (cluster.isPrimary) {
   for (var i = 0; i < workers; i++) {
     const id = uuidv4();
     const node = {};
+    const port = basePort + i;
+
     node[id] = {"vnodes": 1};
-    workerIds.push(id);
+    workerIds.push({id, port});
     hashRing.add(node);
     mapping[id] = true;
     cluster.fork({
       TYPE: "worker",
       ID: id,
-      PORT: basePort + i
+      PORT: port
     });
   }
   /*for (var i = 0; i < clients; i++)
