@@ -81,6 +81,7 @@ if (cluster.isPrimary) {
 
   // @ts-expect-error
   const hashRing = new HashRing.default([], 'md5', {"replicas": 1}) as HashRing;
+  const basePort = 5000;
 
   for (var i = 0; i < workers; i++) {
     const id = uuidv4();
@@ -91,7 +92,8 @@ if (cluster.isPrimary) {
     mapping[id] = true;
     cluster.fork({
       TYPE: "worker",
-      ID: id
+      ID: id,
+      PORT: basePort + i
     });
   }
   /*for (var i = 0; i < clients; i++)

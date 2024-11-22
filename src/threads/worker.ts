@@ -18,24 +18,37 @@ function buildHashRing(ids: string[]): HashRing {
 
 export default async function workerProcess() {
     const sock = new zmq.Request();
+    const listReceiver = new zmq.Reply();
     sock.routingId = process.env.ID;
-    let hr: HashRing | null = null;
     sock.connect(backAddr);
+    await listReceiver.bind(`tcp://*:${process.env.PORT}`);
   
     const readyMsg = {
       type: "ready",
     };
     sock.send(JSON.stringify(readyMsg));
   
+    await Promise.all([processRequests(sock), receiveLists(listReceiver)]);  
+  }
+
+  async function processRequests(sock: zmq.Request) {
+    let hr: HashRing | null = null;
+
     for await (const msg of sock) {
-      const contents = JSON.parse(msg[2].toString());
-      hr = buildHashRing(contents.workerIds);
-      console.log(hr);
-  
-      const reply = {
-        type: contents.type,
-        message: `${contents.type} to you too`
-      };
-      sock.send([msg[0], '', JSON.stringify(reply)]);
+        const contents = JSON.parse(msg[2].toString());
+        console.log(process.env.ID, contents);
+        hr = buildHashRing(contents.workerIds);
+    
+        const reply = {
+          type: contents.type,
+          message: `${contents.type} to you too`
+        };
+        sock.send([msg[0], '', JSON.stringify(reply)]);
+      }
+  }
+
+  async function receiveLists(listReceiver: zmq.Reply) {
+    for await (const msg of listReceiver) {
+        // do something
     }
   }
