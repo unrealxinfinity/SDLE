@@ -8,7 +8,7 @@ const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
 const workers = 10;
-const availableWorkers = [];
+const workerIds = [];
 const mapping = {};
 
 async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: HashRing) {
@@ -28,11 +28,12 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: Has
         }
       }, 10);*/
 
+      contents.workerIds = workerIds;
       const responsible = hashRing.get(contents.list);
       const interval = setInterval(() => {
         if (mapping[responsible] === false) {
           mapping[responsible] = true;
-          backSvr.send([responsible, "", msg[0], "", msg[2]]);
+          backSvr.send([responsible, "", msg[0], "", JSON.stringify(contents)]);
           clearInterval(interval);
         }
       }, 10);
@@ -85,6 +86,7 @@ if (cluster.isPrimary) {
     const id = uuidv4();
     const node = {};
     node[id] = {"vnodes": 1};
+    workerIds.push(id);
     hashRing.add(node);
     mapping[id] = true;
     cluster.fork({
