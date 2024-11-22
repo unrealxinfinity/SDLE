@@ -6,11 +6,11 @@ const lists = {};
 
 function buildHashRing(ids: any): HashRing {
     // @ts-expect-error
-    const hashRing = new HashRing.default([], 'md5', {"replicas": 1}) as HashRing;
+    const hashRing = new HashRing.default([], 'md5', { "replicas": 1 }) as HashRing;
 
     for (const id in ids) {
         const node = {};
-        node[id] = {"vnodes": 1};
+        node[id] = { "vnodes": 1 };
         hashRing.add(node);
     }
 
@@ -23,16 +23,16 @@ export default async function workerProcess() {
     sock.routingId = process.env.ID;
     sock.connect(backAddr);
     await listReceiver.bind(`tcp://*:${process.env.PORT}`);
-  
+
     const readyMsg = {
-      type: "ready",
+        type: "ready",
     };
     sock.send(JSON.stringify(readyMsg));
-  
-    await Promise.all([processRequests(sock), receiveLists(listReceiver)]);  
-  }
 
-  async function processRequests(sock: zmq.Request) {
+    await Promise.all([processRequests(sock), receiveLists(listReceiver)]);
+}
+
+async function processRequests(sock: zmq.Request) {
     let hr: HashRing | null = null;
 
     for await (const msg of sock) {
@@ -40,35 +40,37 @@ export default async function workerProcess() {
         console.log(process.env.ID, contents);
         hr = buildHashRing(contents.workerIds);
 
-        if (contents.type == "kill") {
-            hr.remove(process.env.ID);
-            for (const list in lists) {
-                const responsible = hr.get(list);
-                const sender = new zmq.Request();
-                sender.connect(`tcp://127.0.0.1:${contents.workerIds[responsible].port}`);
+        switch (contents.type) {
+            case "kill":
+                hr.remove(process.env.ID);
+                for (const list in lists) {
+                    const responsible = hr.get(list);
+                    const sender = new zmq.Request();
+                    sender.connect(`tcp://127.0.0.1:${contents.workerIds[responsible].port}`);
 
-                while (true) {
-                    const msg = {id: list, list: lists[list]}
-                    sender.send(JSON.stringify(msg));
+                    while (true) {
+                        const msg = { id: list, list: lists[list] }
+                        sender.send(JSON.stringify(msg));
 
-                    const [rep] = await sender.receive();
-                    if (rep.toString() === "ACK") break;
+                        const [rep] = await sender.receive();
+                        if (rep.toString() === "ACK") break;
+                    }
                 }
-            }
-            sock.send([msg[0], '', "i am dead"]);
-            continue;
+                sock.send([msg[0], '', "i am dead"]);
+                break;
+            default:
+                const reply = {
+                    type: contents.type,
+                    message: `${contents.type} to you too`
+                };
+                sock.send([msg[0], '', JSON.stringify(reply)]);
+                break;
         }
-    
-        const reply = {
-          type: contents.type,
-          message: `${contents.type} to you too`
-        };
-        sock.send([msg[0], '', JSON.stringify(reply)]);
-      }
-  }
+    }
+}
 
-  async function receiveLists(listReceiver: zmq.Reply) {
+async function receiveLists(listReceiver: zmq.Reply) {
     for await (const msg of listReceiver) {
         // do something
     }
-  }
+}
