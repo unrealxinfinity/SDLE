@@ -2,12 +2,13 @@ import * as HashRing from "hashring";
 import * as zmq from "zeromq";
 
 const backAddr = "tcp://127.0.0.1:12345";
+const lists = {};
 
-function buildHashRing(ids: string[]): HashRing {
+function buildHashRing(ids: any): HashRing {
     // @ts-expect-error
     const hashRing = new HashRing.default([], 'md5', {"replicas": 1}) as HashRing;
 
-    for (const id of ids) {
+    for (const id in ids) {
         const node = {};
         node[id] = {"vnodes": 1};
         hashRing.add(node);
@@ -38,6 +39,25 @@ export default async function workerProcess() {
         const contents = JSON.parse(msg[2].toString());
         console.log(process.env.ID, contents);
         hr = buildHashRing(contents.workerIds);
+
+        if (contents.type == "kill") {
+            hr.remove(process.env.ID);
+            for (const list in lists) {
+                const responsible = hr.get(list);
+                const sender = new zmq.Request();
+                sender.connect(`tcp://127.0.0.1:${contents.workerIds[responsible].port}`);
+
+                while (true) {
+                    const msg = {id: list, list: lists[list]}
+                    sender.send(JSON.stringify(msg));
+
+                    const [rep] = await sender.receive();
+                    if (rep.toString() === "ACK") break;
+                }
+            }
+            sock.send([msg[0], '', "i am dead"]);
+            continue;
+        }
     
         const reply = {
           type: contents.type,

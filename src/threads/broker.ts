@@ -8,7 +8,7 @@ const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
 const workers = 10;
-const workerIds = [];
+const workerIds = {};
 const mapping = {};
 
 async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: HashRing) {
@@ -98,7 +98,7 @@ if (cluster.isPrimary) {
     const port = basePort + i;
 
     node[id] = {"vnodes": 1};
-    workerIds.push({id, port});
+    workerIds[id] = port;
     hashRing.add(node);
     mapping[id] = true;
     cluster.fork({
