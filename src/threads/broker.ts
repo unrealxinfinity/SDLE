@@ -15,37 +15,32 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: Has
   for await (const msg of frontSvr) {
     const contents = JSON.parse(msg[2].toString());
 
-    if (contents.type == "create") {
-      const listID = uuidv4();
+    switch (contents.type) {
+      case "create":
+        const listID = uuidv4();
 
-      frontSvr.send([msg[0], "", listID]);
-    } else if (contents.type == "kill") {
-      contents.workerIds = workerIds;
-      const interval = setInterval(() => {
+        frontSvr.send([msg[0], "", listID]);
+        break;
+      case "kill":
+        contents.workerIds = workerIds;
+      const killInterval = setInterval(() => {
         if (mapping[contents.id] === false) {
           mapping[contents.id] = true;
           backSvr.send([contents.id, "", msg[0], "", JSON.stringify(contents)]);
-          clearInterval(interval);
+          clearInterval(killInterval);
         }
       }, 10);
-    } else {
-      /*const interval = setInterval(() => {
-        //console.log(availableWorkers);
-        if (availableWorkers.length > 0) {
-          backSvr.send([availableWorkers.shift(), "", msg[0], "", msg[2]]);
-          clearInterval(interval);
-        }
-      }, 10);*/
-
-      contents.workerIds = workerIds;
-      const responsible = hashRing.get(contents.list);
-      const interval = setInterval(() => {
-        if (mapping[responsible] === false) {
-          mapping[responsible] = true;
-          backSvr.send([responsible, "", msg[0], "", JSON.stringify(contents)]);
-          clearInterval(interval);
-        }
-      }, 10);
+        break;
+      default:
+        contents.workerIds = workerIds;
+        const responsible = hashRing.get(contents.list);
+        const interval = setInterval(() => {
+          if (mapping[responsible] === false) {
+            mapping[responsible] = true;
+            backSvr.send([responsible, "", msg[0], "", JSON.stringify(contents)]);
+            clearInterval(interval);
+          }
+        }, 10);
     }
   }
 }
