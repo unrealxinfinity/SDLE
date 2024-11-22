@@ -125,11 +125,13 @@ if (cluster.isPrimary) {
   // Use env variables to dictate client or worker
 
   // @ts-expect-error
-  const hashRing = new HashRing.default([]) as HashRing;
+  const hashRing = new HashRing.default([], 'md5', {"replicas": 1}) as HashRing;
 
   for (var i = 0; i < workers; i++) {
     const id = uuidv4();
-    hashRing.add(id);
+    const node = {};
+    node[id] = {"vnodes": 1};
+    hashRing.add(node);
     mapping[id] = true;
     cluster.fork({
       TYPE: "worker",
