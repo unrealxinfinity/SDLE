@@ -49,10 +49,10 @@ async function processRequests(sock: zmq.Request) {
           const responsible = hr.get(list);
           const sender = new zmq.Request();
           console.log(
-            `tcp://127.0.0.1:${contents.workerIds[responsible].port}`
+            `tcp://127.0.0.1:${contents.workerIds[responsible]}`
           );
           sender.connect(
-            `tcp://127.0.0.1:${contents.workerIds[responsible].port}`
+            `tcp://127.0.0.1:${contents.workerIds[responsible]}`
           );
 
           while (true) {
@@ -63,7 +63,9 @@ async function processRequests(sock: zmq.Request) {
             if (rep.toString() === "ACK") break;
           }
         }
-        sock.send([msg[0], "", "i am dead"]);
+        
+        const confirmation = {type: "i am dead"}
+        sock.send([msg[0], "", JSON.stringify(confirmation)]);
         break;
       default:
         const reply = {
@@ -78,6 +80,12 @@ async function processRequests(sock: zmq.Request) {
 
 async function receiveLists(listReceiver: zmq.Reply) {
   for await (const msg of listReceiver) {
-    console.log(msg.toString());
+    try {
+        const list = JSON.parse(msg.toString());
+        console.log(list);
+        listReceiver.send("ACK");
+    } catch {
+        listReceiver.send("NACK");
+    }
   }
 }

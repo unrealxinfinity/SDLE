@@ -61,7 +61,7 @@ async function frontend(
   }
 }
 
-async function backend(backSvr: zmq.Router, frontSvr: zmq.Router) {
+async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: HashRing) {
   for await (const msg of backSvr) {
     /*availableWorkers.push(msg[0]);
     if (msg[2].toString() !== "READY") {
@@ -69,16 +69,19 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router) {
     }*/
     const contents = JSON.parse(msg[msg.length - 1].toString());
 
-    if (contents.type === "ready") {
-      console.log("i got a ready");
-      mapping[msg[0].toString()] = false;
-      /*mapping[contents.list] = {
-        id: msg[0],
-        busy: false,
-      };*/
-    } else {
-      mapping[msg[0].toString()] = false;
-      frontSvr.send([msg[2], msg[3], msg[4]]);
+    switch (contents.type) {
+      case "ready":
+        console.log("i got a ready");
+        mapping[msg[0].toString()] = false;
+        break;
+      case "i am dead":
+        console.log("someone died");
+        hashRing.remove(msg[0].toString());
+        break;
+      default:
+        mapping[msg[0].toString()] = false;
+        frontSvr.send([msg[2], msg[3], msg[4]]);
+        break;
     }
   }
 }
@@ -92,7 +95,7 @@ async function loadBalancer(hashRing: HashRing) {
 
   await Promise.all([
     frontend(frontSvr, backSvr, hashRing),
-    backend(backSvr, frontSvr),
+    backend(backSvr, frontSvr, hashRing),
   ]);
 }
 
