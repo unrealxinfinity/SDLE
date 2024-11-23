@@ -77,6 +77,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: Hash
       case "i am dead":
         console.log("someone died");
         hashRing.remove(msg[0].toString());
+        delete workerIds[msg[0].toString()];
         break;
       default:
         mapping[msg[0].toString()] = false;
