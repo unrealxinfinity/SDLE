@@ -11,7 +11,11 @@ const workers = 10;
 const workerIds = {};
 const mapping = {};
 
-async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: HashRing) {
+async function frontend(
+  frontSvr: zmq.Router,
+  backSvr: zmq.Router,
+  hashRing: HashRing
+) {
   for await (const msg of frontSvr) {
     const contents = JSON.parse(msg[2].toString());
 
@@ -23,13 +27,19 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: Has
         break;
       case "kill":
         contents.workerIds = workerIds;
-      const killInterval = setInterval(() => {
-        if (mapping[contents.id] === false) {
-          mapping[contents.id] = true;
-          backSvr.send([contents.id, "", msg[0], "", JSON.stringify(contents)]);
-          clearInterval(killInterval);
-        }
-      }, 10);
+        const killInterval = setInterval(() => {
+          if (mapping[contents.id] === false) {
+            mapping[contents.id] = true;
+            backSvr.send([
+              contents.id,
+              "",
+              msg[0],
+              "",
+              JSON.stringify(contents),
+            ]);
+            clearInterval(killInterval);
+          }
+        }, 10);
         break;
       default:
         contents.workerIds = workerIds;
@@ -37,7 +47,13 @@ async function frontend(frontSvr: zmq.Router, backSvr: zmq.Router, hashRing: Has
         const interval = setInterval(() => {
           if (mapping[responsible] === false) {
             mapping[responsible] = true;
-            backSvr.send([responsible, "", msg[0], "", JSON.stringify(contents)]);
+            backSvr.send([
+              responsible,
+              "",
+              msg[0],
+              "",
+              JSON.stringify(contents),
+            ]);
             clearInterval(interval);
           }
         }, 10);
@@ -74,7 +90,10 @@ async function loadBalancer(hashRing: HashRing) {
   const frontSvr = new zmq.Router();
   await frontSvr.bind(frontAddr);
 
-  await Promise.all([frontend(frontSvr, backSvr, hashRing), backend(backSvr, frontSvr)]);
+  await Promise.all([
+    frontend(frontSvr, backSvr, hashRing),
+    backend(backSvr, frontSvr),
+  ]);
 }
 
 // Example is finished.
@@ -84,7 +103,7 @@ if (cluster.isPrimary) {
   // Use env variables to dictate client or worker
 
   // @ts-expect-error
-  const hashRing = new HashRing.default([], 'md5', {"replicas": 1}) as HashRing;
+  const hashRing = new HashRing.default([], "md5", { replicas: 1 }) as HashRing;
   const basePort = 5000;
 
   for (var i = 0; i < workers; i++) {
@@ -92,14 +111,14 @@ if (cluster.isPrimary) {
     const node = {};
     const port = basePort + i;
 
-    node[id] = {"vnodes": 1};
+    node[id] = { vnodes: 1 };
     workerIds[id] = port;
     hashRing.add(node);
     mapping[id] = true;
     cluster.fork({
       TYPE: "worker",
       ID: id,
-      PORT: port
+      PORT: port,
     });
   }
   /*for (var i = 0; i < clients; i++)
@@ -124,7 +143,6 @@ if (cluster.isPrimary) {
   await loadBalancer(hashRing);
 } else {
   if (process.env.TYPE === "client") {
-    
   } else {
     await workerProcess();
   }
