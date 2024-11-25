@@ -11,6 +11,9 @@ function buildHashRing(ids: any): HashRing {
   const hashRing = new HashRing.default([], "md5", { replicas: 1 }) as HashRing;
 
   for (const id in ids) {
+    if (id === process.env.ID) {
+      continue;
+    }
     const node = {};
     node[id] = { vnodes: 1 };
     hashRing.add(node);
@@ -44,7 +47,6 @@ async function processRequests(sock: zmq.Request) {
 
     switch (contents.type) {
       case "kill":
-        hr.remove(process.env.ID);
         for (const list in lists) {
           const responsible = hr.get(list);
           const sender = new zmq.Request();
