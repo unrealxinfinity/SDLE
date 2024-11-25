@@ -12,8 +12,11 @@ const ring = new HashRing.default({
 
 console.log(ring);
 
+const p = ring.continuum();
+ring.add({'12': {vnodes: 1}});
+
 // @ts-expect-error
-const p = ring.points();
- 
+console.log(ring.ring);
+
 // Now we are going to get some a server for a key
-console.log(ring.get("banana")); // returns 127.0.0.x
+console.log(ring.get("127.0.0.3")); // returns 127.0.0.x

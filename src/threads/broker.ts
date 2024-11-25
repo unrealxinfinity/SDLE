@@ -10,6 +10,8 @@ const clients = 10;
 const workers = 10;
 const workerIds = {};
 const mapping = {};
+const basePort = 5000;
+let lastUsedPort = 0;
 
 async function frontend(
   frontSvr: zmq.Router,
@@ -40,6 +42,23 @@ async function frontend(
             clearInterval(killInterval);
           }
         }, 10);
+        break;
+      case "add":
+        const id = uuidv4();
+        const node = {};
+        lastUsedPort++;
+        const port = basePort + lastUsedPort;
+
+        node[id] = { vnodes: 1 };
+        workerIds[id] = port;
+        hashRing.add(node);
+        mapping[id] = true;
+        cluster.fork({
+          TYPE: "worker",
+          ID: id,
+          PORT: port,
+          WORRKERIDS: JSON.stringify(workerIds)
+        });
         break;
       default:
         contents.workerIds = workerIds;
@@ -108,9 +127,9 @@ if (cluster.isPrimary) {
 
   // @ts-expect-error
   const hashRing = new HashRing.default([], "md5", { replicas: 1 }) as HashRing;
-  const basePort = 5000;
 
   for (var i = 0; i < workers; i++) {
+    lastUsedPort = i;
     const id = uuidv4();
     const node = {};
     const port = basePort + i;
