@@ -76,7 +76,8 @@ async function processRequests(sock: zmq.Request) {
             sender.send(JSON.stringify(msg));
 
             const [rep] = await sender.receive();
-            if (rep.toString() === "ACK") break;
+            const repObj = JSON.parse(rep.toString());
+            if (repObj.type === "ACK") break;
           }
         }
         
@@ -110,10 +111,8 @@ async function workerComms(listReceiver: zmq.Reply) {
             await listReceiver.send(JSON.stringify(reply));
             break;
         }
-
-        listReceiver.send("ACK");
     } catch {
-        listReceiver.send("NACK");
+        listReceiver.send(JSON.stringify({type: "NACK"}));
     }
   }
 }
