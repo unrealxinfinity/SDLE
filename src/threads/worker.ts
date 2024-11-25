@@ -5,6 +5,7 @@ const backAddr = "tcp://127.0.0.1:12345";
 const lists = {};
 lists[`${process.env.ID}-testlist`] = { banana: 1 };
 lists[`${process.env.ID}-testlist2`] = { apples: 3 };
+let hr: HashRing | null = null;
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -74,8 +75,6 @@ async function cacheMiss(port: number, listID: string) {
 }
 
 async function processRequests(sock: zmq.Request) {
-  let hr: HashRing | null = null;
-
   for await (const msg of sock) {
     const contents = JSON.parse(msg[2].toString());
     console.log(process.env.ID, contents);
@@ -131,6 +130,16 @@ async function workerComms(listReceiver: zmq.Reply) {
           case "give":
             const reply = {list: lists[msg.id]};
             await listReceiver.send(JSON.stringify(reply));
+            break;
+          case "transfer":
+            const toTransfer = {};
+            hr.add(msg.id)
+            for (const list in lists) {
+              if (hr.get(list) == msg.id) {
+                toTransfer[list] = lists[list];
+              }
+            }
+            await listReceiver.send(JSON.stringify(toTransfer));
             break;
         }
     } catch {
