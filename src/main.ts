@@ -1,5 +1,6 @@
 import * as readline from "readline";
-
+import { DeltaORMap } from "./crdt/DeltaORMap.js";
+import * as fs from 'fs';
 
 enum ConsoleState{
     START,
@@ -8,7 +9,7 @@ enum ConsoleState{
 
 interface item {
     name: string;
-    quantity: Number;
+    quantity: number;
 }
 
 interface state{
@@ -17,6 +18,12 @@ interface state{
     items : Map<string, item>;
     pre_sync_items : Map<string, item>;
     shoppingListId : string;
+    crdt : DeltaORMap | null;
+}
+
+const readJsonFile = (filePath: string): any => {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(data);
 }
 
 
@@ -46,12 +53,14 @@ async function handleInput(rl : readline.Interface, state : state){
     function loadShoppingList(id : string, state : state){
         state.shoppingListId = id;
         state.items.clear();
+        state.pre_sync_items = structuredClone(state.items)
         state.consoleState = ConsoleState.SHOPPING_LIST;
     }
 
     function createShoppingList(name : string, state : state){
         const id : string = generateGUId();
         state.listIds.set(id, name);
+        state.crdt = new DeltaORMap(generateGUId())
         loadShoppingList(id, state);
     }
 
@@ -62,7 +71,7 @@ async function handleInput(rl : readline.Interface, state : state){
         return `${timestamp}-${random_num}`; 
     }
     
-    function addItem(name : string, quantity : Number = 1, state : state){
+    function addItem(name : string, quantity : number = 1, state : state){
         const item : item = {name: name, quantity: quantity};
         if(!state.items.has(name)){
             state.items.set(name, item);
@@ -76,7 +85,37 @@ async function handleInput(rl : readline.Interface, state : state){
     }
 
     function sync(state : state){
-        //crdt
+        for(const item of state.items.values()){
+            if(!state.pre_sync_items.has(item.name)){
+                state.crdt.add(item.name, item.quantity)
+            }
+            else{
+                const pre_sync_item = state.pre_sync_items.get(item.name)
+                if(pre_sync_item.quantity < item.quantity){
+                    state.crdt.add(item.name, item.quantity-pre_sync_item.quantity)
+                }
+                else if(pre_sync_item.quantity > item.quantity){
+                    state.crdt.remove(item.name, pre_sync_item.quantity-item.quantity)
+                }
+            }
+
+        }
+
+        for(const item of state.pre_sync_items.values()){
+            if(!state.items.has(item.name)){
+                state.crdt.remove(item.name, item.quantity)
+            }
+        }
+
+
+
+        state.pre_sync_items = state.items
+
+        console.log("\nCRDT:")
+        state.crdt.readAll()
+
+
+
     }
 
 
@@ -102,8 +141,14 @@ async function handleInput(rl : readline.Interface, state : state){
 
 
     let text : string = initial_text;
+    const commands : Array<string> = readJsonFile('./test.json').commands;
     while(true){
-        const answer : string = await createQuestion(rl, text);
+        let answer : string = "";
+        if(commands.length > 0) {
+            answer = commands[0]
+            commands.shift()
+        }
+        else answer = await createQuestion(rl, text);
         text = "";
         const answerArray : Array<string> = answer.split(" ");
         const answerArrayLength = answerArray.length;
@@ -115,7 +160,7 @@ async function handleInput(rl : readline.Interface, state : state){
                         viewShoppingList(state);
                     }
                     else if(command == "add" && answerArrayLength == 3){
-                        const itemQuantity : Number = Number(answerArray[1])
+                        const itemQuantity : number = Number(answerArray[1])
                         const itemName : string = answerArray[2];
                         addItem(itemName, itemQuantity, state);
                     }
@@ -124,7 +169,7 @@ async function handleInput(rl : readline.Interface, state : state){
                         remItem(itemName, state);
                     }
                     else if(command == "sync" && answerArrayLength == 1){
-                        //sync();
+                        sync(state)
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
@@ -175,7 +220,7 @@ const rl : readline.Interface = readline.createInterface({
     output: process.stdout
 });
 
-let state : state = {consoleState: ConsoleState.START, listIds: new Map(), items: new Map(), pre_sync_items: new Map(), shoppingListId: ""}; 
+let state : state = {consoleState: ConsoleState.START, listIds: new Map(), items: new Map(), pre_sync_items: new Map(), shoppingListId: "", crdt: null}; 
 
 
 handleInput(rl, state);

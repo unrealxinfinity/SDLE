@@ -21,6 +21,7 @@ class DeltaORMap {
       this.delta.set(item,new DeltaContext(item,this.causalContext.get(this.id)));
     }
     this.delta.get(item).add(delta);*/
+
     if(!this.causalContext.get(this.id)[1].has(item)){
       this.causalContext.get(this.id)[1].set(item,delta);
     }
@@ -239,6 +240,14 @@ class DeltaORMap {
    */
   read(product:string){
     return this.products.get(product);
+  }
+
+  readAll(){
+    for(const [name, [causal_number, itemMap]] of this.causalContext.entries()){
+      for(const [item_name, quantity] of itemMap.entries()){
+        console.log(item_name + ": " + quantity + "(" + causal_number + ")")
+      }
+    }
   }
   /*
   joinDelta(other:DeltaORMap){
