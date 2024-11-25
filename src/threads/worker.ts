@@ -34,7 +34,21 @@ export default async function workerProcess() {
   };
   sock.send(JSON.stringify(readyMsg));
 
-  await Promise.all([processRequests(sock), receiveLists(listReceiver)]);
+  await Promise.all([processRequests(sock), workerComms(listReceiver)]);
+}
+
+async function cacheMiss(port: number, listID: string) {
+  const requester = new zmq.Request();
+  requester.connect(`tcp://127.0.0.1:${port}`);
+
+  const request = {
+    type: "give",
+    listID
+  };
+
+  await requester.send(JSON.stringify(request));
+  const msg = await requester.receive();
+  console.log(msg);
 }
 
 async function processRequests(sock: zmq.Request) {
@@ -80,7 +94,7 @@ async function processRequests(sock: zmq.Request) {
   }
 }
 
-async function receiveLists(listReceiver: zmq.Reply) {
+async function workerComms(listReceiver: zmq.Reply) {
   for await (const msg of listReceiver) {
     try {
         const list = JSON.parse(msg.toString());
