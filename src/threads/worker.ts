@@ -133,7 +133,7 @@ async function workerComms(listReceiver: zmq.Reply) {
             break;
           case "transfer":
             const toTransfer = {};
-            hr.add(msg.id)
+            hr.add(msg.id);
             for (const list in lists) {
               if (hr.get(list) == msg.id) {
                 toTransfer[list] = lists[list];
