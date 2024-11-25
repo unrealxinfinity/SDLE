@@ -137,6 +137,7 @@ async function workerComms(listReceiver: zmq.Reply) {
             for (const list in lists) {
               if (hr.get(list) == msg.id) {
                 toTransfer[list] = lists[list];
+                delete lists[list];
               }
             }
             await listReceiver.send(JSON.stringify(toTransfer));
