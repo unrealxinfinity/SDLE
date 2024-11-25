@@ -29,12 +29,34 @@ export default async function workerProcess() {
   sock.connect(backAddr);
   await listReceiver.bind(`tcp://*:${process.env.PORT}`);
 
+  if (process.env.WORKERIDS) {
+    await syncLists();
+  }
+
   const readyMsg = {
     type: "ready",
   };
   sock.send(JSON.stringify(readyMsg));
 
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
+}
+
+async function syncLists() {
+  const workers = JSON.parse(process.env.WORKERIDS);
+  for (const worker in workers) {
+    const requester = new zmq.Request();
+    requester.connect(`tcp://127.0.0.1:${workers[worker]}`);
+
+    const request = {
+      type: "transfer",
+      id: process.env.ID
+    };
+
+    await requester.send(JSON.stringify(request));
+
+    const reply = await requester.receive();
+    console.log(reply);
+  }
 }
 
 async function cacheMiss(port: number, listID: string) {
