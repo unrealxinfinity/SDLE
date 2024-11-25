@@ -43,7 +43,7 @@ async function cacheMiss(port: number, listID: string) {
 
   const request = {
     type: "give",
-    listID
+    id: listID
   };
 
   await requester.send(JSON.stringify(request));
@@ -72,7 +72,7 @@ async function processRequests(sock: zmq.Request) {
           );
 
           while (true) {
-            const msg = { id: list, list: lists[list] };
+            const msg = { id: list, list: lists[list], type: "killed" };
             sender.send(JSON.stringify(msg));
 
             const [rep] = await sender.receive();
@@ -95,10 +95,22 @@ async function processRequests(sock: zmq.Request) {
 }
 
 async function workerComms(listReceiver: zmq.Reply) {
-  for await (const msg of listReceiver) {
+  for await (const recieved of listReceiver) {
     try {
-        const list = JSON.parse(msg.toString());
-        console.log(list);
+        const msg = JSON.parse(recieved.toString());
+        console.log(msg);
+
+        switch (msg.type) {
+          case "killed":
+            lists[msg.id] = msg.list;
+            await listReceiver.send(JSON.stringify({type: "ACK"}));
+            break;
+          case "give":
+            const reply = {list: lists[msg.id]};
+            await listReceiver.send(JSON.stringify(reply));
+            break;
+        }
+
         listReceiver.send("ACK");
     } catch {
         listReceiver.send("NACK");
