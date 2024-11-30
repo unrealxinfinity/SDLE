@@ -16,12 +16,13 @@ let lastUsedPort = 0;
 enum WorkerState {
   BUSY,
   READY,
-  DYING
+  DYING,
+  STARTING
 }
 
 function sendMessageOnInterval(msg: any, id: string, sockMsg: Buffer[], backSvr: zmq.Router, frontSvr: zmq.Router) {
   const interval = setInterval(async () => {
-    if (mapping[id] === WorkerState.DYING) {
+    if (mapping[id] === WorkerState.DYING || mapping[id] == WorkerState.STARTING) {
       frontSvr.send([
         sockMsg[0],
         "",
@@ -82,7 +83,7 @@ async function frontend(
         node[id] = { vnodes: 5 };
         workerIds[id] = port;
         hashRing.add(node);
-        mapping[id] = WorkerState.BUSY;
+        mapping[id] = WorkerState.STARTING;
         cluster.fork({
           TYPE: "worker",
           ID: id,

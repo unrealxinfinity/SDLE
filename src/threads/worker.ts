@@ -38,7 +38,7 @@ export default async function workerProcess() {
   const readyMsg = {
     type: "ready",
   };
-  sock.send(JSON.stringify(readyMsg));
+  await sock.send(JSON.stringify(readyMsg));
 
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
 }
@@ -46,6 +46,7 @@ export default async function workerProcess() {
 async function syncLists() {
   const workers = JSON.parse(process.env.WORKERIDS);
   for (const worker in workers) {
+    if (worker === process.env.ID) continue;
     const requester = new zmq.Request();
     requester.connect(`tcp://127.0.0.1:${workers[worker]}`);
 
@@ -79,7 +80,7 @@ async function processRequests(sock: zmq.Request) {
   for await (const msg of sock) {
     const contents = JSON.parse(msg[2].toString());
     console.log(process.env.ID, contents);
-    process.env.WORKERIDS = contents.workerIds;
+    process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);
 
     switch (contents.type) {
