@@ -16,7 +16,7 @@ function buildHashRing(ids: any): HashRing {
       continue;
     }
     const node = {};
-    node[id] = { vnodes: 1 };
+    node[id] = { vnodes: 5 };
     hashRing.add(node);
   }
 
@@ -30,7 +30,7 @@ export default async function workerProcess() {
   sock.connect(backAddr);
   await listReceiver.bind(`tcp://*:${process.env.PORT}`);
 
-  hr = buildHashRing(process.env.WORKERIDS);
+  hr = buildHashRing(JSON.parse(process.env.WORKERIDS));
   if (process.env.INITIAL !== "true") {
     await syncLists();
   }
@@ -137,11 +137,12 @@ async function workerComms(listReceiver: zmq.Reply) {
             const toTransfer = {};
             const newNode = {};
             let transfered = 0;
-            newNode[msg.id]= {vnodes: 1};
-            const localHr = buildHashRing(process.env.WORKERIDS);
+            newNode[msg.id]= {vnodes: 5};
+            const localHr = buildHashRing(JSON.parse(process.env.WORKERIDS));
             localHr.add(newNode);
             for (const list in lists) {
-              if (localHr.get(list) == msg.id) {
+              const owner = localHr.get(list);
+              if (owner == msg.id) {
                 toTransfer[list] = lists[list];
                 transfered++;
                 delete lists[list];

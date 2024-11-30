@@ -79,7 +79,7 @@ async function frontend(
         lastUsedPort++;
         const port = basePort + lastUsedPort;
 
-        node[id] = { vnodes: 1 };
+        node[id] = { vnodes: 5 };
         workerIds[id] = port;
         hashRing.add(node);
         mapping[id] = WorkerState.BUSY;
@@ -152,7 +152,7 @@ if (cluster.isPrimary) {
     const node = {};
     const port = basePort + i;
 
-    node[id] = { vnodes: 1 };
+    node[id] = { vnodes: 5 };
     workerIds[id] = port;
     hashRing.add(node);
     mapping[id] = WorkerState.BUSY;
