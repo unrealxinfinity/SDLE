@@ -13,6 +13,35 @@ const mapping = {};
 const basePort = 5000;
 let lastUsedPort = 0;
 
+enum WorkerState {
+  BUSY,
+  READY,
+  DYING
+}
+
+function sendMessageOnInterval(msg: any, id: string, sockMsg: Buffer[], backSvr: zmq.Router, frontSvr: zmq.Router) {
+  const interval = setInterval(async () => {
+    if (mapping[id] === WorkerState.DYING) {
+      frontSvr.send([
+        sockMsg[0],
+        "",
+        "The system is undergoing maintenance. Retry in a few seconds."
+      ]);
+    }
+    else if (mapping[id] === WorkerState.READY) {
+      mapping[id] = WorkerState.BUSY;
+      backSvr.send([
+        id,
+        "",
+        sockMsg[0],
+        "",
+        msg
+      ]);
+      clearInterval(interval);
+    }
+  }, 10);
+}
+
 async function frontend(
   frontSvr: zmq.Router,
   backSvr: zmq.Router,
@@ -29,9 +58,10 @@ async function frontend(
         break;
       case "kill":
         contents.workerIds = workerIds;
-        const killInterval = setInterval(() => {
-          if (mapping[contents.id] === false) {
-            mapping[contents.id] = true;
+        sendMessageOnInterval(JSON.stringify(contents), contents.id, msg, backSvr, frontSvr);
+        /*const killInterval = setInterval(() => {
+          if (mapping[contents.id] === WorkerState.READY) {
+            mapping[contents.id] = WorkerState.BUSY;
             backSvr.send([
               contents.id,
               "",
@@ -41,7 +71,7 @@ async function frontend(
             ]);
             clearInterval(killInterval);
           }
-        }, 10);
+        }, 10);*/
         break;
       case "add":
         const id = uuidv4();
@@ -52,30 +82,18 @@ async function frontend(
         node[id] = { vnodes: 1 };
         workerIds[id] = port;
         hashRing.add(node);
-        mapping[id] = true;
+        mapping[id] = WorkerState.BUSY;
         cluster.fork({
           TYPE: "worker",
           ID: id,
           PORT: port,
-          WORRKERIDS: JSON.stringify(workerIds)
+          WORKERIDS: JSON.stringify(workerIds)
         });
         break;
       default:
         contents.workerIds = workerIds;
         const responsible = hashRing.get(contents.list);
-        const interval = setInterval(() => {
-          if (mapping[responsible] === false) {
-            mapping[responsible] = true;
-            backSvr.send([
-              responsible,
-              "",
-              msg[0],
-              "",
-              JSON.stringify(contents),
-            ]);
-            clearInterval(interval);
-          }
-        }, 10);
+        sendMessageOnInterval(JSON.stringify(contents), responsible, msg, backSvr, frontSvr);
     }
   }
 }
@@ -91,7 +109,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: Hash
     switch (contents.type) {
       case "ready":
         console.log("i got a ready");
-        mapping[msg[0].toString()] = false;
+        mapping[msg[0].toString()] = WorkerState.READY;
         break;
       case "i am dead":
         console.log("someone died");
@@ -99,7 +117,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: Hash
         delete workerIds[msg[0].toString()];
         break;
       default:
-        mapping[msg[0].toString()] = false;
+        mapping[msg[0].toString()] = WorkerState.READY;
         frontSvr.send([msg[2], msg[3], msg[4]]);
         break;
     }
@@ -137,7 +155,7 @@ if (cluster.isPrimary) {
     node[id] = { vnodes: 1 };
     workerIds[id] = port;
     hashRing.add(node);
-    mapping[id] = true;
+    mapping[id] = WorkerState.BUSY;
     cluster.fork({
       TYPE: "worker",
       ID: id,
