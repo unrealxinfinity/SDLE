@@ -30,7 +30,8 @@ export default async function workerProcess() {
   sock.connect(backAddr);
   await listReceiver.bind(`tcp://*:${process.env.PORT}`);
 
-  if (process.env.WORKERIDS) {
+  hr = buildHashRing(process.env.WORKERIDS);
+  if (process.env.INITIAL !== "true") {
     await syncLists();
   }
 
@@ -56,7 +57,7 @@ async function syncLists() {
     await requester.send(JSON.stringify(request));
 
     const reply = await requester.receive();
-    console.log(reply);
+    console.log(JSON.parse(reply.toString()));
   }
 }
 
@@ -78,6 +79,7 @@ async function processRequests(sock: zmq.Request) {
   for await (const msg of sock) {
     const contents = JSON.parse(msg[2].toString());
     console.log(process.env.ID, contents);
+    process.env.WORKERIDS = contents.workerIds;
     hr = buildHashRing(contents.workerIds);
 
     switch (contents.type) {
@@ -133,17 +135,23 @@ async function workerComms(listReceiver: zmq.Reply) {
             break;
           case "transfer":
             const toTransfer = {};
-            hr.add(msg.id);
+            const newNode = {};
+            let transfered = 0;
+            newNode[msg.id]= {vnodes: 1};
+            const localHr = buildHashRing(process.env.WORKERIDS);
+            localHr.add(newNode);
             for (const list in lists) {
-              if (hr.get(list) == msg.id) {
+              if (localHr.get(list) == msg.id) {
                 toTransfer[list] = lists[list];
+                transfered++;
                 delete lists[list];
               }
             }
             await listReceiver.send(JSON.stringify(toTransfer));
             break;
         }
-    } catch {
+    } catch (e) {
+        console.error(e);
         listReceiver.send(JSON.stringify({type: "NACK"}));
     }
   }

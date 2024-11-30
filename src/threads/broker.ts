@@ -156,11 +156,15 @@ if (cluster.isPrimary) {
     workerIds[id] = port;
     hashRing.add(node);
     mapping[id] = WorkerState.BUSY;
+  }
+  for (const id in workerIds) {
     cluster.fork({
       TYPE: "worker",
       ID: id,
-      PORT: port,
-    });
+      PORT: workerIds[id],
+      WORKERIDS: JSON.stringify(workerIds),
+      INITIAL: true
+    })
   }
   /*for (var i = 0; i < clients; i++)
     cluster.fork({
