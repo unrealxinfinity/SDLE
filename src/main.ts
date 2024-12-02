@@ -59,17 +59,25 @@ async function handleInput(rl : readline.Interface, state : state){
         state.items.clear();
         state.pre_sync_items = structuredClone(state.items)
         state.consoleState = ConsoleState.SHOPPING_LIST;
+    }
+
+    async function createShoppingList(name : string, state : state){
         if(state.sock == null){
             state.sock = new zmq.Request();
             state.sock.connect(frontAddr);
         }
-    }
+        const createId = {
+            type: "create",
+        };
+        await state.sock.send(JSON.stringify(createId));
+        const id : string = (await state.sock.receive()).toString();
 
-    function createShoppingList(name : string, state : state){
-        const id : string = generateGUId();
         state.listIds.set(id, name);
         state.crdt = new DeltaORMap(generateGUId())
-        loadShoppingList(id, state);
+        state.shoppingListId = id;
+        state.items.clear();
+        state.pre_sync_items = structuredClone(state.items);
+        state.consoleState = ConsoleState.SHOPPING_LIST;
     }
 
 
@@ -105,7 +113,7 @@ async function handleInput(rl : readline.Interface, state : state){
         }
     }
 
-    function sync(state : state){
+    function pull(state : state){
         for(const item of state.items.values()){
             if(!state.pre_sync_items.has(item.name)){
                 state.crdt.add(item.name, item.quantity)
@@ -154,7 +162,7 @@ async function handleInput(rl : readline.Interface, state : state){
        -"add --itemQuantity --itemName" to add an item to the list or to increase its quantity;
        -"rem --itemName" to remove an item from the list;
        -"rem --itemQuantity --itemName" to remove an item from the list or decrease its quantity;
-       -"sync" to sync the changes with other users;
+       -"pull" to pull changes from the server;
        -"list" to list the shopping lists you are a part of;
        -"load --id" to load a shopping list;
        -"create --name" to create a new shopping list;
@@ -162,7 +170,7 @@ async function handleInput(rl : readline.Interface, state : state){
 
 
     let text : string = initial_text;
-    const commands : Array<string> = readJsonFile('./test.json').commands;
+    const commands : Array<string> = [];//readJsonFile('./test.json').commands;
     while(true){
         let answer : string = "";
         if(commands.length > 0) {
@@ -194,8 +202,8 @@ async function handleInput(rl : readline.Interface, state : state){
                         const itemName : string = answerArray[2];
                         remItem(itemName, state, itemQuantity);
                     }
-                    else if(command == "sync" && answerArrayLength == 1){
-                        sync(state)
+                    else if(command == "pull" && answerArrayLength == 1){
+                        pull(state)
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
@@ -212,7 +220,7 @@ async function handleInput(rl : readline.Interface, state : state){
                     }
                     else if(command == "create" && answerArrayLength == 2){
                         const name : string = answerArray[1];
-                        createShoppingList(name, state);
+                        await createShoppingList(name, state);
                         text = initial_text;
                     }
                     break;

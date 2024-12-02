@@ -180,7 +180,7 @@ if (cluster.isPrimary) {
   var deadClients = 0;
   cluster.on("disconnect", function (worker) {
     deadClients++;
-    if (deadClients === clients) {
+    if (deadClients === clients){
       console.log("finished");
       process.exit(0);
     }
