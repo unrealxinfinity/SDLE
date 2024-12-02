@@ -12,6 +12,10 @@ class DeltaORMap {
     this.causalContext.set(this.id,[0,new Map<string,number>()]);
   }
 
+  setID(id: string) {
+    this.id = id;
+  }
+
   static fromString(serialized: string) {
     const crdt = new DeltaORMap('');
     crdt.causalContext.clear();
@@ -53,6 +57,10 @@ class DeltaORMap {
     }
     this.delta.get(item).add(delta);*/
 
+    if (!this.causalContext.has(this.id)) {
+      this.causalContext.set(this.id,[0,new Map<string,number>()]);
+    }
+
     if(!this.causalContext.get(this.id)[1].has(item)){
       this.causalContext.get(this.id)[1].set(item,delta);
     }
@@ -72,6 +80,11 @@ class DeltaORMap {
       throw new Error("Item not found for removal");
     }
     this.delta.get(item).add(-delta);*/
+
+    if (!this.causalContext.has(this.id)) {
+      this.causalContext.set(this.id,[0,new Map<string,number>()]);
+    }
+
     if(!this.causalContext.get(this.id)[1].has(item)){
       throw new Error("Item not found for removal");
     }
@@ -199,7 +212,7 @@ class DeltaORMap {
         otherIter++;
       }
     }  while (!(thisIter===thisEntries.length) || !(otherIter===otherEntries.length));
-      this.products = this.mergeDeltaProductList(this.causalContext.get(this.id),this.causalContext.get(other.getName()));
+      //this.products = this.mergeDeltaProductList(this.causalContext.get(this.id),this.causalContext.get(other.getName()));
   }
   /**
    * Changes the delta map at the listID with the new deltaMap and the version associated;

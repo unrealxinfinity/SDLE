@@ -93,7 +93,7 @@ async function frontend(
         break;
       default:
         contents.workerIds = workerIds;
-        const responsible = hashRing.get(contents.list);
+        const responsible = hashRing.get(contents.id);
         sendMessageOnInterval(JSON.stringify(contents), responsible, msg, backSvr, frontSvr);
     }
   }

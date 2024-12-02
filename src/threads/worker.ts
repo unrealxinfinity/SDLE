@@ -1,11 +1,13 @@
 import * as HashRing from "hashring";
 import * as zmq from "zeromq";
+import { DeltaORMap } from "../crdt/DeltaORMap.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
 const lists = {};
 lists[`${process.env.ID}-testlist`] = { banana: 1 };
 lists[`${process.env.ID}-testlist2`] = { apples: 3 };
 let hr: HashRing | null = null;
+const shoppingLists: {[key: string]: DeltaORMap} = {};
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -107,6 +109,33 @@ async function processRequests(sock: zmq.Request) {
         
         const confirmation = {type: "i am dead"}
         sock.send([msg[0], "", JSON.stringify(confirmation)]);
+        break;
+      case "upload":
+        const newList = DeltaORMap.fromString(contents.list);
+        shoppingLists[contents.id] = newList;
+        const uploadReply = {
+          type: "upload",
+          message: `List ${contents.id} has been uploaded.`
+        };
+        sock.send([msg[0], "", JSON.stringify(uploadReply)]);
+        break;
+      case "update":
+        const receivedList = DeltaORMap.fromString(contents.list);
+        shoppingLists[contents.id].join(receivedList);
+        const updateReply = {
+          type: "update",
+          message: `List ${contents.id} has been updated.`
+        };
+        sock.send([msg[0], "", JSON.stringify(updateReply)]);
+        break;
+      case "fetch":
+        const list = shoppingLists[contents.id];
+        const fetchReply = {
+          type: "fetch",
+          message: "List has been fetched.",
+          list: list.toString()
+        };
+        sock.send([msg[0], "", JSON.stringify(fetchReply)]);
         break;
       default:
         const reply = {
