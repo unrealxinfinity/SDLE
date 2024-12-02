@@ -4,7 +4,7 @@ import { DeltaORMap } from "../crdt/DeltaORMap";
 const frontAddr = "tcp://127.0.0.1:12346";
 
 async function clientProcess() {
-  var sock = new zmq.Request();
+  const sock = new zmq.Request();
   sock.connect(frontAddr);
   const createMsg = {
     type: "create",
