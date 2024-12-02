@@ -1,23 +1,24 @@
-// No approach for idempotence was implemented in the DeltaORMap class.
 class DeltaORMap {
   private delta:Map<string,number>;
   private id:string;
+  private listid:string;
   private causalContext:Map<string,[number,Map<string,number>]>;
   private products:Map<string,number>;
-  constructor(name:string) {
-    this.id = name;
+  constructor(client_name:string,list_id) {
+    this.id = client_name;
+    this.listid = list_id;
     this.delta = new Map<string,number>();
     this.products = new Map<string,number>();
     this.causalContext = new Map<string,[number,Map<string,number>]>;
     this.causalContext.set(this.id,[0,new Map<string,number>()]);
   }
-
+  
   setID(id: string) {
     this.id = id;
   }
 
   static fromString(serialized: string) {
-    const crdt = new DeltaORMap('');
+    const crdt = new DeltaORMap('','');
     crdt.causalContext.clear();
     const json = JSON.parse(serialized);
 
