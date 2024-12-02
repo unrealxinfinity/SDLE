@@ -23,6 +23,8 @@ interface state{
     sock : zmq.Request | null;
 }
 
+const userStates : Map<string, state> = new Map();
+
 const frontAddr = "tcp://127.0.0.1:12346";
 
 const readJsonFile = (filePath: string): any => {
@@ -55,29 +57,47 @@ async function handleInput(rl : readline.Interface, state : state){
     }
 
     function loadShoppingList(id : string, state : state){
+        //NOT FINISHED DONT USE
         state.shoppingListId = id;
         state.items.clear();
         state.pre_sync_items = structuredClone(state.items)
         state.consoleState = ConsoleState.SHOPPING_LIST;
     }
 
-    async function createShoppingList(name : string, state : state){
-        if(state.sock == null){
-            state.sock = new zmq.Request();
-            state.sock.connect(frontAddr);
+    function pickShoppingList(name : string, state : state){
+        if(userStates.has(name)){
+            state = userStates.get(name)
+            state.consoleState = ConsoleState.SHOPPING_LIST;
         }
-        const createId = {
-            type: "create",
-        };
-        await state.sock.send(JSON.stringify(createId));
-        const id : string = (await state.sock.receive()).toString();
+        else{
+            console.log("The list with name " + name + " does not exist\n")
+        }
+        return state;
+    }
 
-        state.listIds.set(id, name);
-        state.crdt = new DeltaORMap(generateGUId())
-        state.shoppingListId = id;
-        state.items.clear();
-        state.pre_sync_items = structuredClone(state.items);
-        state.consoleState = ConsoleState.SHOPPING_LIST;
+    async function createShoppingList(name : string, state : state){
+        if(!userStates.has(name)){
+            /*if(state.sock == null){
+                state.sock = new zmq.Request();
+                state.sock.connect(frontAddr);
+            }
+            const createId = {
+                type: "create",
+            };
+            await state.sock.send(JSON.stringify(createId));
+            const id : string = (await state.sock.receive()).toString();*/
+            const id = generateGUId();
+            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, listIds: state.listIds, items: new Map(), pre_sync_items: new Map(), shoppingListId: id, crdt: new DeltaORMap(generateGUId()), sock: state.sock}
+            newState.listIds.set(id, name);
+            userStates.set(name, newState);
+            state = pickShoppingList(name, state);
+            console.log("Successfully created shopping list " + name + " with id = " + id + '\n');
+        }
+        else{
+            console.log("The list with that name already exists. I'm sorry\n");
+        }
+
+        return state;
     }
 
 
@@ -155,6 +175,7 @@ async function handleInput(rl : readline.Interface, state : state){
        -"list" to list the shopping lists you are a part of;
        -"load --id" to load a shopping list;
        -"create --name" to create a new shopping list;
+       -"pick --name" to pick a shopping list;
        -"close" to exit the program;\n\n`;
 
     const help_text2 : string = `Type one of the following commands:
@@ -217,10 +238,11 @@ async function handleInput(rl : readline.Interface, state : state){
                         const id :string = answerArray[1];
                         loadShoppingList(id, state);
                         text = initial_text;
+                        viewShoppingList(state);
                     }
                     else if(command == "create" && answerArrayLength == 2){
                         const name : string = answerArray[1];
-                        await createShoppingList(name, state);
+                        state = await createShoppingList(name, state);
                         text = initial_text;
                     }
                     break;
@@ -229,6 +251,12 @@ async function handleInput(rl : readline.Interface, state : state){
                     break;
                 }
 
+            }
+            if(command == "pick" && answerArrayLength == 2){
+                const listName : string = answerArray[1];
+                state = pickShoppingList(listName, state);
+                viewShoppingList(state);
+                text = initial_text;
             }
             if(command == "help" && answerArrayLength == 1){
                 if(state.consoleState == ConsoleState.START) text = help_text1;

@@ -4,9 +4,9 @@
         "add 1 grape",
         "add 3 potato",
         "rem potato",
-        "sync",
+        "pull",
         "add 1 banana",
-        "sync",
+        "pull",
         "view",
         "close"
     ]

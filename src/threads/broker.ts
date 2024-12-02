@@ -52,11 +52,6 @@ async function frontend(
     const contents = JSON.parse(msg[2].toString());
 
     switch (contents.type) {
-      case "create":
-        const listID = uuidv4();
-
-        frontSvr.send([msg[0], "", listID]);
-        break;
       case "kill":
         contents.workerIds = workerIds;
         sendMessageOnInterval(JSON.stringify(contents), contents.id, msg, backSvr, frontSvr);
