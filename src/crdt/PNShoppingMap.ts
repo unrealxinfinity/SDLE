@@ -11,7 +11,11 @@ class PNShoppingMap{
         this.inc.set(this.clientId,new Map());
         this.dec.set(this.clientId,new Map());
     }
-
+    /**
+     * Adds an item by certain quantity for the shopping list belonging to this clientID
+     * @param item 
+     * @param quantity 
+     */
     add(item: string,quantity:number = 1){
         if(quantity<0){
             throw new Error("Quantity must be positive");
@@ -23,17 +27,54 @@ class PNShoppingMap{
             this.inc.get(this.clientId).set(item,quantity);
         }
     }
+    /**
+     * Removes an item by certain quantity for the shopping list belonging to this clientID
+     * @param item 
+     * @param quantity 
+     */
     remove(item:string,quantity:number = 1){
         if(quantity<0){
             throw new Error("Quantity must be positive for client:" + this.clientId + "in cart: "+this.id);
         }
+        
         if(this.dec.get(this.clientId).has(item)){
+            if(this.calcTotal(item)-quantity<0){
+                throw new Error("Can't remove more than what shopping list has for client:" + this.clientId + "in cart: "+this.id);
+            }
             const currentQuantity = this.dec.get(this.clientId).get(item);
             this.dec.get(this.clientId).set(item,currentQuantity+quantity);
         }else{
             this.dec.get(this.clientId).set(item,quantity);
         }
     }
+    /**
+     * Calculates the total amount of an item in the shopping list for the client of this PNShoppingMap
+     * @param item 
+     * @returns {number} total amount of the item in the shopping list belonging to the client of this PNShoppingMap
+     */
+    private calcTotal(item:string){
+        let itemInc = 0;
+        let itemDec = 0;
+        //sum the incs of each client
+        for (let shoppingList of this.inc.values()){
+            if(shoppingList.has(item)){
+                itemInc += shoppingList.get(item)
+            }
+        }
+        console.log(this.dec.values())
+        //sum the decs of each client
+        for (let shoppingList2 of this.dec.values()){
+            if(!shoppingList2.has(item)){
+                continue
+            }
+            itemDec += shoppingList2.get(item);
+        }
+        return itemInc-itemDec;
+    }
+    /**
+     * Merge function to join the shopping lists of this client and other;
+     * @param {PNShoppingMap} other shopping list
+     */
     join(other: PNShoppingMap){
         other.inc.forEach((shoppingListOther,clientId)=>{
             // If the shopping list from other client isnt present in this pn counter, just add the counter of the other client;
@@ -47,48 +88,61 @@ class PNShoppingMap{
                 this.dec.set(clientId,shoppingListOther);
             }
         });
-        let thisOtherIncList = this.inc.get(other.clientId);
-        let otherIncList = other.inc.get(other.clientId);
 
-        let thisIncList = this.inc.get(this.clientId);
-        let otherThisIncList = other.inc.get(this.clientId);
+        //the shopping lists of the 2 clients in each of the respective observed counter array
+        const thisOtherIncList = this.inc.get(other.clientId);
+        const otherIncList = other.inc.get(other.clientId);
 
-        thisOtherIncList = this.sortMapByKey(thisOtherIncList);
-        otherIncList = this.sortMapByKey(otherIncList);
-        thisIncList = this.sortMapByKey(thisIncList);
-        otherThisIncList = this.sortMapByKey(otherThisIncList);
+        const thisIncList = this.inc.get(this.clientId);
+        const otherThisIncList = other.inc.get(this.clientId);
 
-        
-        
-        thisIncList.forEach((quantity,item)=>{
-            //If this item set contains item that the other item set contains then take the max of the two quantities
-            if(otherThisIncList.has(item)){
-                const max = Math.max(quantity,otherThisIncList.get(item));
-                thisIncList.set(item,max);
-            }
-            // else means we already have more information than the other client so we dont need to do anything
-        })
-        
+        // for both the correspondend client, chooses the "max" of the 2 lists resulting in this list's counter
+        this.max(thisOtherIncList,otherIncList);
+        this.max(thisIncList,otherThisIncList);
+
+
+        //Does the same for dec counters
+        const thisOtherDecList = this.dec.get(other.clientId);
+        const otherDecList = other.dec.get(other.clientId);
+
+        const thisDecList = this.dec.get(this.clientId);
+        const otherThisDecList = other.dec.get(this.clientId);
+
+        this.max(thisOtherDecList,otherDecList);
+        this.max(thisDecList,otherThisDecList);
+
        
     }
-    mergeShoppingLists(thisList,other){
-        thisList.forEach((quantity,item)=>{
-            //If this item set contains item that the other item set contains then take the max of the two quantities
-            if(other.has(item)){
-                const max = Math.max(quantity,other.get(item));
-                thisList.set(item,max);
-            }
-            // else means we already have more information than the other client so we dont need to do anything
-        })
-        
+
+    /**
+     * Custom max function to calculate the max pn counters for each item present in the list for 2 lists of the same cient
+     * If the item is present in this clients counter array, stays the max, otherwise add the item from the other client for the same shopping list.
+     * @param thisList 
+     * @param other 
+     */
+    private max(thisList:Map<string,number>,other:Map<string,number>){
+        // for each of the items in the other list, check if this itemlist has it, if yes chooses the max pn counter, else add the new item from the other list.
+       if(other){
+            other.forEach((quantity,item)=>{
+                if(thisList.has(item)){
+                    const thisQuantity = thisList.get(item);
+                    const max = Math.max(quantity,thisQuantity);
+                    thisList.set(item,max);
+                }
+                else{
+                    thisList.set(item,quantity);
+                }
+            });
+       }
+       else{
+            //Means we have the list with info and the other doesnt have any info, so nothing new to add
+            console.log("other is null, nothing to be done")
+       }
+      
     }
-    sortMapByKey(map: Map<string, number>): Map<string, number> {
-        const sortedEntries = Array.from(map.entries()).sort(([keyA], [keyB]) => {
-          if (keyA < keyB) return -1;
-          if (keyA > keyB) return 1;
-          return 0;
-        });
-        return new Map(sortedEntries);
+
+    read(item:string){
+       return this.calcTotal(item) ?? 0;
     }
     getClientId(){
         return this.clientId;
@@ -97,3 +151,4 @@ class PNShoppingMap{
         return this.id;
     }
 }
+export { PNShoppingMap };
