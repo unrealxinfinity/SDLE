@@ -52,11 +52,6 @@ async function frontend(
     const contents = JSON.parse(msg[2].toString());
 
     switch (contents.type) {
-      case "create":
-        const listID = uuidv4();
-
-        frontSvr.send([msg[0], "", listID]);
-        break;
       case "kill":
         contents.workerIds = workerIds;
         sendMessageOnInterval(JSON.stringify(contents), contents.id, msg, backSvr, frontSvr);
@@ -180,7 +175,7 @@ if (cluster.isPrimary) {
   var deadClients = 0;
   cluster.on("disconnect", function (worker) {
     deadClients++;
-    if (deadClients === clients) {
+    if (deadClients === clients){
       console.log("finished");
       process.exit(0);
     }
