@@ -1,6 +1,7 @@
 import * as readline from "readline";
 import { DeltaORMap } from "./crdt/DeltaORMap.js";
 import * as fs from 'fs';
+import * as zmq from "zeromq";
 
 enum ConsoleState{
     START,
@@ -19,7 +20,10 @@ interface state{
     pre_sync_items : Map<string, item>;
     shoppingListId : string;
     crdt : DeltaORMap | null;
+    sock : zmq.Request | null;
 }
+
+const frontAddr = "tcp://127.0.0.1:12346";
 
 const readJsonFile = (filePath: string): any => {
     const data = fs.readFileSync(filePath, 'utf-8');
@@ -55,6 +59,10 @@ async function handleInput(rl : readline.Interface, state : state){
         state.items.clear();
         state.pre_sync_items = structuredClone(state.items)
         state.consoleState = ConsoleState.SHOPPING_LIST;
+        if(state.sock == null){
+            state.sock = new zmq.Request();
+            state.sock.connect(frontAddr);
+        }
     }
 
     function createShoppingList(name : string, state : state){
@@ -72,15 +80,28 @@ async function handleInput(rl : readline.Interface, state : state){
     }
     
     function addItem(name : string, quantity : number = 1, state : state){
-        const item : item = {name: name, quantity: quantity};
-        if(!state.items.has(name)){
+        if(quantity > 0 && !state.items.has(name)){
+            const item : item = {name: name, quantity: quantity};
+            state.items.set(name, item);
+        }
+        else if(quantity > 0){
+            const item : item = state.items.get(name);
+            item.quantity += quantity;
             state.items.set(name, item);
         }
     }
     
-    function remItem(name : string, state : state){
+    function remItem(name : string, state : state, quantity : number | null = null){
         if(state.items.has(name)){
-            state.items.delete(name);
+            if(quantity == null){
+                state.items.delete(name);
+            }
+            else if(quantity > 0){
+                const item = state.items.get(name);
+                item.quantity -= quantity;
+                if(item.quantity <= 0) state.items.delete(name);
+                else state.items.set(name, item);
+            }
         }
     }
 
@@ -111,7 +132,6 @@ async function handleInput(rl : readline.Interface, state : state){
 
         state.pre_sync_items = state.items
 
-        console.log("\nCRDT:")
         state.crdt.readAll()
 
 
@@ -131,8 +151,9 @@ async function handleInput(rl : readline.Interface, state : state){
 
     const help_text2 : string = `Type one of the following commands:
        -"view" to view the list;
-       -"add --itemQuantity --itemName" to add an item to the list;
+       -"add --itemQuantity --itemName" to add an item to the list or to increase its quantity;
        -"rem --itemName" to remove an item from the list;
+       -"rem --itemQuantity --itemName" to remove an item from the list or decrease its quantity;
        -"sync" to sync the changes with other users;
        -"list" to list the shopping lists you are a part of;
        -"load --id" to load a shopping list;
@@ -167,6 +188,11 @@ async function handleInput(rl : readline.Interface, state : state){
                     else if(command == "rem" && answerArrayLength == 2){
                         const itemName : string = answerArray[1];
                         remItem(itemName, state);
+                    }
+                    else if(command == "rem" && answerArrayLength == 3){
+                        const itemQuantity : number = Number(answerArray[1])
+                        const itemName : string = answerArray[2];
+                        remItem(itemName, state, itemQuantity);
                     }
                     else if(command == "sync" && answerArrayLength == 1){
                         sync(state)
@@ -220,7 +246,7 @@ const rl : readline.Interface = readline.createInterface({
     output: process.stdout
 });
 
-let state : state = {consoleState: ConsoleState.START, listIds: new Map(), items: new Map(), pre_sync_items: new Map(), shoppingListId: "", crdt: null}; 
+let state : state = {consoleState: ConsoleState.START, listIds: new Map(), items: new Map(), pre_sync_items: new Map(), shoppingListId: "", crdt: null, sock: null}; 
 
 
 handleInput(rl, state);
