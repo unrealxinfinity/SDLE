@@ -1,5 +1,5 @@
 import * as zmq from "zeromq";
-import { DeltaORMap } from "../crdt/DeltaORMap.js";
+import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 
 const frontAddr = "tcp://127.0.0.1:12346";
 const id = "808082b1-0ed7-4fcc-8716-0883e7561996";
@@ -18,8 +18,7 @@ async function clientProcess() {
   const fetchReply = JSON.parse((await sock.receive()).toString());
   console.log(fetchReply.toString());
 
-  const list = DeltaORMap.fromString(fetchReply.list);
-  list.setID("c2");
+  const list = PNShoppingMap.fromJSON(fetchReply.list,"c2");
 
   for (let i = 0; i < 1000; i++) {
     list.add("flour", 2);
@@ -30,7 +29,7 @@ async function clientProcess() {
     const updateMsg = {
       type: "update",
       id,
-      list: list.toString()
+      list: list.toJSON()
     };
 
     await sock.send(JSON.stringify(updateMsg));

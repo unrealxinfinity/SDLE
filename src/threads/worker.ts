@@ -1,13 +1,13 @@
 import * as HashRing from "hashring";
 import * as zmq from "zeromq";
-import { DeltaORMap } from "../crdt/DeltaORMap.js";
+import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
 const lists = {};
 lists[`${process.env.ID}-testlist`] = { banana: 1 };
 lists[`${process.env.ID}-testlist2`] = { apples: 3 };
 let hr: HashRing | null = null;
-const shoppingLists: {[key: string]: DeltaORMap} = {};
+const shoppingLists: {[key: string]: PNShoppingMap} = {};
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -111,7 +111,7 @@ async function processRequests(sock: zmq.Request) {
         sock.send([msg[0], "", JSON.stringify(confirmation)]);
         break;
       case "upload":
-        const newList = DeltaORMap.fromString(contents.list);
+        const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
         shoppingLists[contents.id] = newList;
         const uploadReply = {
           type: "upload",
@@ -120,7 +120,7 @@ async function processRequests(sock: zmq.Request) {
         sock.send([msg[0], "", JSON.stringify(uploadReply)]);
         break;
       case "update":
-        const receivedList = DeltaORMap.fromString(contents.list);
+        const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
         shoppingLists[contents.id].join(receivedList);
         const updateReply = {
           type: "update",

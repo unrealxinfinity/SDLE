@@ -3,13 +3,18 @@ class PNShoppingMap{
     private dec: Map<string,Map<string,number>>
     private id : string;
     private clientId : string;
-    constructor(clientId: string,shippingListId: string=""){  
+    constructor(clientId: string="",shoppingListId: string=""){  
         this.inc = new Map();
         this.dec = new Map();
-        this.id = shippingListId;
+        this.id = shoppingListId;
         this.clientId = clientId;
-        this.inc.set(this.clientId,new Map());
-        this.dec.set(this.clientId,new Map());
+        if(clientId){
+            this.inc.set(this.clientId,new Map());
+            this.dec.set(this.clientId,new Map());
+        }
+        else{
+            console.warn("No clientID provided");
+        }
     }
     /**
      * Adds an item by certain quantity for the shopping list belonging to this clientID
@@ -79,13 +84,13 @@ class PNShoppingMap{
      /**
       *  Method to create an instance from a JSON string
       * @param {string} json JSON string to create an instance from
-      * @returns {Pair<inc,dec>} instance created from the JSON string, pair of inc and dec maps
+      * @returns {PNShoppingMap} new instance created from the JSON string
       */
-    static fromJSON(json: string): { inc: Map<string, Map<string, number>>; dec: Map<string, Map<string, number>> } {
+    static fromJSON(json: string,clientID:string="",listID:string=""): PNShoppingMap {
         const obj = JSON.parse(json);
-        const instance = {"inc":null,"dec":null}
-        instance.inc = PNShoppingMap.objectToMap(obj.inc);
-        instance.dec = PNShoppingMap.objectToMap(obj.dec);
+        const instance = new PNShoppingMap(clientID,listID);
+        instance.setInc(PNShoppingMap.objectToMap(obj.inc));
+        instance.setDec(PNShoppingMap.objectToMap(obj.dec));
         return instance;
     }
     /**
