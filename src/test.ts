@@ -5,6 +5,7 @@ let list2 = new DeltaORMap("list2");
 
 list1.add("banana");
 list2.add("banana");
+list2.add("apple");
 list1.join(list2);
 list2.join(list1);
 list2.join(list1);
@@ -13,3 +14,5 @@ list1.join(list2);
 //list2.join(list1);
 console.log(list2.read("banana"));
 console.log(list1.read("banana"));
+console.log(list1.toString());
+console.log(DeltaORMap.fromString(list1.toString()).getCausal());

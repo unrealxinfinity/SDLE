@@ -11,6 +11,37 @@ class DeltaORMap {
     this.causalContext = new Map<string,[number,Map<string,number>]>;
     this.causalContext.set(this.id,[0,new Map<string,number>()]);
   }
+
+  static fromString(serialized: string) {
+    const crdt = new DeltaORMap('');
+    crdt.causalContext.clear();
+    const json = JSON.parse(serialized);
+
+    for (const key in json) {
+      const innerMap: Map<string,number> = new Map();
+      for (const innerkey in json[key][1]) {
+        innerMap.set(innerkey, json[key][1][innerkey]);
+      }
+      crdt.causalContext.set(key, [json[key][0], innerMap]);
+    }
+
+    return crdt;
+  }
+
+  toString() {
+    const serialized = {};
+
+    for (const [key, value] of this.causalContext) {
+      const inner = {};
+      for (const [key1, value1] of value[1]) {
+        inner[key1] = value1;
+      }
+      serialized[key] = [value[0], inner];
+    }
+
+    return JSON.stringify(serialized);
+  }
+
   /**
    * adds a new delta value to the context (delta positive);
    * @param {string} item - the item to be added
