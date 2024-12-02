@@ -5,7 +5,7 @@ const frontAddr = "tcp://127.0.0.1:12346";
 const id = "808082b1-0ed7-4fcc-8716-0883e7561996";
 
 async function clientProcess() {
-  var sock = new zmq.Request();
+  const sock = new zmq.Request();
   sock.connect(frontAddr);
 
   const fetchMsg = {
