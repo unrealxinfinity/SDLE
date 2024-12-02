@@ -12,6 +12,8 @@ console.log(list2);
 list1.join(list2);
 console.log(list2.read("banana"))
 console.log(list1.read("banana"))
+console.log(list1.read("apple"))
+console.log(list2.toJSON());
 /*
 list1.join(list2);
 list2.join(list1);

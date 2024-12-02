@@ -48,6 +48,47 @@ class PNShoppingMap{
         }
     }
     /**
+     *   Method to convert a map to an object
+     */
+    private mapToObject(map: Map<string, Map<string, number>>): object {
+        const obj = {};
+        map.forEach((value, key) => {
+        obj[key] = Object.fromEntries(value);
+        });
+        return obj;
+    }
+    /**
+     * Method to convert the inc and dec maps to JSON strings
+     * @returns {string} JSON string of the inc and dec maps
+     */
+    toJSON(): string {
+        const incObj = this.mapToObject(this.inc);
+        const decObj = this.mapToObject(this.dec);
+        return JSON.stringify({ inc: incObj, dec: decObj });
+    }
+    /**
+     *  Method to convert an object to a map
+     */ 
+    private static objectToMap(obj: object): Map<string, Map<string, number>> {
+        const map = new Map<string, Map<string, number>>();
+        Object.entries(obj).forEach(([key, value]) => {
+        map.set(key, new Map(Object.entries(value as object)));
+        });
+        return map;
+    }
+     /**
+      *  Method to create an instance from a JSON string
+      * @param {string} json JSON string to create an instance from
+      * @returns {Pair<inc,dec>} instance created from the JSON string, pair of inc and dec maps
+      */
+    static fromJSON(json: string): { inc: Map<string, Map<string, number>>; dec: Map<string, Map<string, number>> } {
+        const obj = JSON.parse(json);
+        const instance = {"inc":null,"dec":null}
+        instance.inc = PNShoppingMap.objectToMap(obj.inc);
+        instance.dec = PNShoppingMap.objectToMap(obj.dec);
+        return instance;
+    }
+    /**
      * Calculates the total amount of an item in the shopping list for the client of this PNShoppingMap
      * @param item 
      * @returns {number} total amount of the item in the shopping list belonging to the client of this PNShoppingMap
@@ -81,37 +122,24 @@ class PNShoppingMap{
             if(!this.inc.has(clientId)){
                 this.inc.set(clientId,shoppingListOther);
             }
+            else{
+                // If the shopping list from other client is present in this pn counter, choose the max of the 2 counters for each item
+                const shoppingListThis = this.inc.get(clientId);
+                this.max(shoppingListThis,shoppingListOther);
+            }
         });
+
         other.dec.forEach((shoppingListOther,clientId)=>{
             // If the shopping list from other client isnt present in this pn counter, just add the counter of the other client;
             if(!this.dec.has(clientId)){
                 this.dec.set(clientId,shoppingListOther);
             }
+            else{
+                // If the shopping list from other client is present in this pn counter, choose the max of the 2 counters for each item
+                const shoppingListThis = this.dec.get(clientId);
+                this.max(shoppingListThis,shoppingListOther);
+            }
         });
-
-        //the shopping lists of the 2 clients in each of the respective observed counter array
-        const thisOtherIncList = this.inc.get(other.clientId);
-        const otherIncList = other.inc.get(other.clientId);
-
-        const thisIncList = this.inc.get(this.clientId);
-        const otherThisIncList = other.inc.get(this.clientId);
-
-        // for both the correspondend client, chooses the "max" of the 2 lists resulting in this list's counter
-        this.max(thisOtherIncList,otherIncList);
-        this.max(thisIncList,otherThisIncList);
-
-
-        //Does the same for dec counters
-        const thisOtherDecList = this.dec.get(other.clientId);
-        const otherDecList = other.dec.get(other.clientId);
-
-        const thisDecList = this.dec.get(this.clientId);
-        const otherThisDecList = other.dec.get(this.clientId);
-
-        this.max(thisOtherDecList,otherDecList);
-        this.max(thisDecList,otherThisDecList);
-
-       
     }
 
     /**
@@ -149,6 +177,18 @@ class PNShoppingMap{
     }
     getId(){
         return this.id;
+    }
+    setClientId(clientId:string){
+        this.clientId = clientId;
+    }
+    setID(id:string){
+        this.id = id;
+    }
+    setInc(inc:Map<string,Map<string,number>>){
+        this.inc = inc;
+    }
+    setDec(dec:Map<string,Map<string,number>>){
+        this.dec = dec;
     }
 }
 export { PNShoppingMap };
