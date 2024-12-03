@@ -1,28 +1,24 @@
 import * as zmq from "zeromq";
-import { DeltaORMap } from "../crdt/DeltaORMap";
+import { PNShoppingMap } from "../crdt/PNShoppingMap";
 
 const frontAddr = "tcp://127.0.0.1:12346";
 
 async function clientProcess() {
-  var sock = new zmq.Request();
+  const sock = new zmq.Request();
   sock.connect(frontAddr);
-  const createMsg = {
-    type: "create",
-  };
-
-  await sock.send(JSON.stringify(createMsg));
-
-  const msg = await sock.receive();
+  
+  const msg = "afafawfpiojafgoihgoaihgoaeighoigha";
+  
   console.log(`socket ${process.env.ID} recieved list id ${msg.toString()}`);
 
-  const list = new DeltaORMap("c1");
+  const list = new PNShoppingMap("c1");
   list.add("apple", 2);
   list.add("flour", 32);
 
   const uploadMsg = {
     type: "upload",
     id: msg.toString(),
-    list: list.toString()
+    list: list.toJSON()
   };
 
   await sock.send(JSON.stringify(uploadMsg));
@@ -36,7 +32,7 @@ async function clientProcess() {
     const updateMsg = {
       type: "update",
       id: msg.toString(),
-      list: list.toString()
+      list: list.toJSON()
     };
 
     await sock.send(JSON.stringify(updateMsg));

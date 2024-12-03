@@ -1,13 +1,13 @@
 import * as HashRing from "hashring";
 import * as zmq from "zeromq";
-import { DeltaORMap } from "../crdt/DeltaORMap.js";
+import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
 const lists = {};
 lists[`${process.env.ID}-testlist`] = { banana: 1 };
 lists[`${process.env.ID}-testlist2`] = { apples: 3 };
 let hr: HashRing | null = null;
-const shoppingLists: {[key: string]: DeltaORMap} = {};
+const shoppingLists: {[key: string]: PNShoppingMap} = {};
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -87,7 +87,7 @@ async function processRequests(sock: zmq.Request) {
 
     switch (contents.type) {
       case "kill":
-        for (const list in lists) {
+        for (const list in shoppingLists) {
           const responsible = hr.get(list);
           const sender = new zmq.Request();
           console.log(
@@ -98,7 +98,7 @@ async function processRequests(sock: zmq.Request) {
           );
 
           while (true) {
-            const msg = { id: list, list: shoppingLists[list].toString(), type: "killed" };
+            const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
             sender.send(JSON.stringify(msg));
 
             const [rep] = await sender.receive();
@@ -111,8 +111,8 @@ async function processRequests(sock: zmq.Request) {
         sock.send([msg[0], "", JSON.stringify(confirmation)]);
         break;
       case "upload":
-        console.log(process.env.ID, contents);
-        const newList = DeltaORMap.fromString(contents.list);
+        console.log(process.env.ID);
+        const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
         shoppingLists[contents.id] = newList;
         const uploadReply = {
           type: "upload",
@@ -121,7 +121,7 @@ async function processRequests(sock: zmq.Request) {
         sock.send([msg[0], "", JSON.stringify(uploadReply)]);
         break;
       case "update":
-        const receivedList = DeltaORMap.fromString(contents.list);
+        const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
         shoppingLists[contents.id].join(receivedList);
         const updateReply = {
           type: "update",
@@ -134,7 +134,7 @@ async function processRequests(sock: zmq.Request) {
         const fetchReply = {
           type: "fetch",
           message: "List has been fetched.",
-          list: list.toString()
+          list: list.toJSON()
         };
         sock.send([msg[0], "", JSON.stringify(fetchReply)]);
         break;
@@ -158,7 +158,7 @@ async function workerComms(listReceiver: zmq.Reply) {
         switch (msg.type) {
           case "killed":
             lists[msg.id] = msg.list;
-            shoppingLists[msg.id] = DeltaORMap.fromString(msg.list);
+            shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list);
 
             await listReceiver.send(JSON.stringify({type: "ACK"}));
             break;
