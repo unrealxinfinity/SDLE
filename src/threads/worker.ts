@@ -59,8 +59,10 @@ async function syncLists() {
 
     await requester.send(JSON.stringify(request));
 
-    const reply = await requester.receive();
-    console.log(JSON.parse(reply.toString()));
+    const reply = JSON.parse(((await requester.receive()).toString()));;
+    for (const list in reply) {
+      shoppingLists[list] = PNShoppingMap.fromJSON(reply[list], null, list);
+    }
   }
 }
 
@@ -74,8 +76,7 @@ async function cacheMiss(port: number, listID: string) {
   };
 
   await requester.send(JSON.stringify(request));
-  const msg = await requester.receive();
-  console.log(msg);
+  const msg = JSON.parse(((await requester.receive()).toString()));
 }
 
 async function processRequests(sock: zmq.Request) {
@@ -84,67 +85,71 @@ async function processRequests(sock: zmq.Request) {
     
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);
+    console.log(process.env.ID);
 
-    switch (contents.type) {
-      case "kill":
-        for (const list in shoppingLists) {
-          const responsible = hr.get(list);
-          const sender = new zmq.Request();
-          console.log(
-            `tcp://127.0.0.1:${contents.workerIds[responsible]}`
-          );
-          sender.connect(
-            `tcp://127.0.0.1:${contents.workerIds[responsible]}`
-          );
+    try {
+      switch (contents.type) {
+        case "kill":
+          for (const list in shoppingLists) {
+            const responsible = hr.get(list);
+            const sender = new zmq.Request();
+            console.log(
+              `tcp://127.0.0.1:${contents.workerIds[responsible]}`
+            );
+            sender.connect(
+              `tcp://127.0.0.1:${contents.workerIds[responsible]}`
+            );
 
-          while (true) {
-            const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
-            sender.send(JSON.stringify(msg));
+            while (true) {
+              const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
+              sender.send(JSON.stringify(msg));
 
-            const [rep] = await sender.receive();
-            const repObj = JSON.parse(rep.toString());
-            if (repObj.type === "ACK") break;
+              const [rep] = await sender.receive();
+              const repObj = JSON.parse(rep.toString());
+              if (repObj.type === "ACK") break;
+            }
           }
-        }
-        
-        const confirmation = {type: "i am dead"}
-        sock.send([msg[0], "", JSON.stringify(confirmation)]);
-        break;
-      case "upload":
-        console.log(process.env.ID);
-        const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-        shoppingLists[contents.id] = newList;
-        const uploadReply = {
-          type: "upload",
-          message: `List ${contents.id} has been uploaded.`
-        };
-        sock.send([msg[0], "", JSON.stringify(uploadReply)]);
-        break;
-      case "update":
-        const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-        shoppingLists[contents.id].join(receivedList);
-        const updateReply = {
-          type: "update",
-          message: `List ${contents.id} has been updated.`
-        };
-        sock.send([msg[0], "", JSON.stringify(updateReply)]);
-        break;
-      case "fetch":
-        const list = shoppingLists[contents.id];
-        const fetchReply = {
-          type: "fetch",
-          message: "List has been fetched.",
-          list: list.toJSON()
-        };
-        sock.send([msg[0], "", JSON.stringify(fetchReply)]);
-        break;
-      default:
-        const reply = {
-          type: contents.type,
-          message: `${contents.type} to you too`,
-        };
-        sock.send([msg[0], "", JSON.stringify(reply)]);
-        break;
+          
+          const confirmation = {type: "i am dead"}
+          sock.send([msg[0], "", JSON.stringify(confirmation)]);
+          break;
+        case "upload":
+          const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
+          shoppingLists[contents.id] = newList;
+          const uploadReply = {
+            type: "upload",
+            message: `List ${contents.id} has been uploaded.`
+          };
+          sock.send([msg[0], "", JSON.stringify(uploadReply)]);
+          break;
+        case "update":
+          const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
+          shoppingLists[contents.id].join(receivedList);
+          const updateReply = {
+            type: "update",
+            message: `List ${contents.id} has been updated.`
+          };
+          sock.send([msg[0], "", JSON.stringify(updateReply)]);
+          break;
+        case "fetch":
+          const list = shoppingLists[contents.id];
+          const fetchReply = {
+            type: "fetch",
+            message: "List has been fetched.",
+            list: list.toJSON()
+          };
+          sock.send([msg[0], "", JSON.stringify(fetchReply)]);
+          break;
+        default:
+          const reply = {
+            type: contents.type,
+            message: `${contents.type} to you too`,
+          };
+          sock.send([msg[0], "", JSON.stringify(reply)]);
+          break;
+      }
+    } catch (e) {
+      sock.send([msg[0], "", JSON.stringify({type: "error", message: "Error in operation."})]);
     }
   }
 }
@@ -158,27 +163,25 @@ async function workerComms(listReceiver: zmq.Reply) {
         switch (msg.type) {
           case "killed":
             lists[msg.id] = msg.list;
-            shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list);
+            shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
 
             await listReceiver.send(JSON.stringify({type: "ACK"}));
             break;
           case "give":
-            const reply = {list: lists[msg.id]};
+            const reply = {list: shoppingLists[msg.id].toJSON()};
             await listReceiver.send(JSON.stringify(reply));
             break;
           case "transfer":
             const toTransfer = {};
             const newNode = {};
-            let transfered = 0;
             newNode[msg.id]= {vnodes: 5};
             const localHr = buildHashRing(JSON.parse(process.env.WORKERIDS));
             localHr.add(newNode);
-            for (const list in lists) {
+            for (const list in shoppingLists) {
               const owner = localHr.get(list);
-              if (owner == msg.id) {
-                toTransfer[list] = lists[list];
-                transfered++;
-                delete lists[list];
+              if (owner === msg.id) {
+                toTransfer[list] = shoppingLists[list];
+                delete shoppingLists[list];
               }
             }
             await listReceiver.send(JSON.stringify(toTransfer));

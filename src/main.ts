@@ -87,7 +87,7 @@ async function handleInput(rl : readline.Interface, state : state){
             await state.sock.send(JSON.stringify(createId));
             const id : string = (await state.sock.receive()).toString();*/
             const id = generateGUId();
-            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, listIds: state.listIds, items: new Map(), pre_sync_items: new Map(), shoppingListId: id, crdt: new DeltaORMap(generateGUId()), sock: state.sock}
+            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, listIds: state.listIds, items: new Map(), pre_sync_items: new Map(), shoppingListId: id, crdt: new DeltaORMap(generateGUId(), ""), sock: state.sock}
             newState.listIds.set(id, name);
             userStates.set(name, newState);
             state = pickShoppingList(name, state);
