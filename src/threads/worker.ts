@@ -81,7 +81,7 @@ async function cacheMiss(port: number, listID: string) {
 async function processRequests(sock: zmq.Request) {
   for await (const msg of sock) {
     const contents = JSON.parse(msg[2].toString());
-    console.log(process.env.ID, contents);
+    
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);
 
@@ -98,7 +98,7 @@ async function processRequests(sock: zmq.Request) {
           );
 
           while (true) {
-            const msg = { id: list, list: lists[list], type: "killed" };
+            const msg = { id: list, list: shoppingLists[list].toString(), type: "killed" };
             sender.send(JSON.stringify(msg));
 
             const [rep] = await sender.receive();
@@ -111,6 +111,7 @@ async function processRequests(sock: zmq.Request) {
         sock.send([msg[0], "", JSON.stringify(confirmation)]);
         break;
       case "upload":
+        console.log(process.env.ID, contents);
         const newList = DeltaORMap.fromString(contents.list);
         shoppingLists[contents.id] = newList;
         const uploadReply = {
@@ -157,6 +158,8 @@ async function workerComms(listReceiver: zmq.Reply) {
         switch (msg.type) {
           case "killed":
             lists[msg.id] = msg.list;
+            shoppingLists[msg.id] = DeltaORMap.fromString(msg.list);
+
             await listReceiver.send(JSON.stringify({type: "ACK"}));
             break;
           case "give":

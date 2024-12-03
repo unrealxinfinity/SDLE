@@ -22,12 +22,13 @@ enum WorkerState {
 
 function sendMessageOnInterval(msg: any, id: string, sockMsg: Buffer[], backSvr: zmq.Router, frontSvr: zmq.Router) {
   const interval = setInterval(async () => {
-    if (mapping[id] === WorkerState.DYING || mapping[id] == WorkerState.STARTING) {
+    if (!(id in mapping) || mapping[id] === WorkerState.DYING || mapping[id] == WorkerState.STARTING) {
       frontSvr.send([
         sockMsg[0],
         "",
         "The system is undergoing maintenance. Retry in a few seconds."
       ]);
+      clearInterval(interval);
     }
     else if (mapping[id] === WorkerState.READY) {
       mapping[id] = WorkerState.BUSY;
@@ -116,6 +117,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: Hash
         console.log("someone died");
         hashRing.remove(msg[0].toString());
         delete workerIds[msg[0].toString()];
+        delete mapping[msg[0].toString()];
         break;
       default:
         mapping[msg[0].toString()] = WorkerState.READY;
