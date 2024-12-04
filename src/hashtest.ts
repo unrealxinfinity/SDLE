@@ -19,4 +19,4 @@ ring.add({'12': {vnodes: 5}});
 console.log(ring.ring);
 
 // Now we are going to get some a server for a key
-console.log(ring.get("127.0.0.3")); // returns 127.0.0.x
+for (let i = 0; i < 1000; i++) console.log(ring.range("banana", 8)); // returns 127.0.0.x

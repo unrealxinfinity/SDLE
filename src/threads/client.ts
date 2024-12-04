@@ -1,5 +1,6 @@
 import * as zmq from "zeromq";
 import { PNShoppingMap } from "../crdt/PNShoppingMap";
+import { v4 as uuidv4 } from "uuid";
 
 const frontAddr = "tcp://127.0.0.1:12346";
 
@@ -11,7 +12,7 @@ async function clientProcess() {
   
   console.log(`socket ${process.env.ID} recieved list id ${msg.toString()}`);
 
-  const list = new PNShoppingMap("c1");
+  const list = new PNShoppingMap(uuidv4(), msg);
   list.add("apple", 2);
   list.add("flour", 32);
 
@@ -38,7 +39,7 @@ async function clientProcess() {
     await sock.send(JSON.stringify(updateMsg));
 
     const updateReply = await sock.receive();
-    console.log(updateReply.toString());
+    console.log(updateReply.toString(), i);
   }
 
   const fetchMsg = {

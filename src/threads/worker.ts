@@ -91,7 +91,7 @@ async function processRequests(sock: zmq.Request) {
     
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);
-    console.log(process.env.ID);
+    console.log(process.env.ID, contents.id);
 
     try {
       switch (contents.type) {
@@ -130,7 +130,12 @@ async function processRequests(sock: zmq.Request) {
           break;
         case "update":
           const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-          shoppingLists[contents.id].join(receivedList);
+          if (!(contents.id in shoppingLists)) {
+            shoppingLists[contents.id] = receivedList;
+          }
+          else {
+            shoppingLists[contents.id].join(receivedList);
+          }
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`

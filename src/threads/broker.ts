@@ -7,7 +7,7 @@ import workerProcess from "./worker.js";
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
-const workers = 10;
+const workers = 2;
 const workerIds = {};
 const mapping = {};
 const basePort = 5000;
@@ -21,7 +21,7 @@ enum WorkerState {
 }
 
 function sendMessageOnInterval(msg: any, id: string, sockMsg: Buffer[], backSvr: zmq.Router, frontSvr: zmq.Router) {
-  const interval = setInterval(async () => {
+  const interval = setInterval(() => {
     if (!(id in mapping) || mapping[id] === WorkerState.DYING || mapping[id] == WorkerState.STARTING) {
       frontSvr.send([
         sockMsg[0],
@@ -40,6 +40,34 @@ function sendMessageOnInterval(msg: any, id: string, sockMsg: Buffer[], backSvr:
         msg
       ]);
       clearInterval(interval);
+    }
+  }, 10);
+}
+
+function sendMessageOnIntervalRange(msg: any, ids: string[], sockMsg: Buffer[], backSvr: zmq.Router, frontSvr: zmq.Router) {
+  const interval = setInterval(() => {
+    for (const id of ids) {
+      if (!(id in mapping) || mapping[id] === WorkerState.DYING || mapping[id] == WorkerState.STARTING) {
+        frontSvr.send([
+          sockMsg[0],
+          "",
+          "The system is undergoing maintenance. Retry in a few seconds."
+        ]);
+        clearInterval(interval);
+        break;
+      }
+      else if (mapping[id] === WorkerState.READY) {
+        mapping[id] = WorkerState.BUSY;
+        backSvr.send([
+          id,
+          "",
+          sockMsg[0],
+          "",
+          msg
+        ]);
+        clearInterval(interval);
+        break;
+      }
     }
   }, 10);
 }
@@ -89,8 +117,8 @@ async function frontend(
         break;
       default:
         contents.workerIds = workerIds;
-        const responsible = hashRing.get(contents.id);
-        sendMessageOnInterval(JSON.stringify(contents), responsible, msg, backSvr, frontSvr);
+        const responsible = hashRing.range(contents.id, 3);
+        sendMessageOnIntervalRange(JSON.stringify(contents), responsible, msg, backSvr, frontSvr);
     }
   }
 }
@@ -116,7 +144,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: Hash
         break;
       default:
         mapping[msg[0].toString()] = WorkerState.READY;
-        frontSvr.send([msg[2], msg[3], msg[4]]);
+        await frontSvr.send([msg[2], msg[3], msg[4]]);
         break;
     }
   }

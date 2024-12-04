@@ -13,7 +13,7 @@ class PNShoppingMap{
             this.dec.set(this.clientId,new Map());
         }
         else{
-            console.warn("No clientID provided");
+            //console.warn("No clientID provided");
         }
     }
     /**
