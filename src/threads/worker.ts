@@ -76,7 +76,13 @@ async function cacheMiss(port: number, listID: string) {
   };
 
   await requester.send(JSON.stringify(request));
+
   const msg = JSON.parse(((await requester.receive()).toString()));
+  if (msg.list) {
+    shoppingLists[listID] = msg.list;
+    return true;
+  }
+  return false;
 }
 
 async function processRequests(sock: zmq.Request) {
@@ -132,7 +138,22 @@ async function processRequests(sock: zmq.Request) {
           sock.send([msg[0], "", JSON.stringify(updateReply)]);
           break;
         case "fetch":
-          const list = shoppingLists[contents.id];
+          let list = shoppingLists[contents.id];
+          if (!list) {
+            const workers = JSON.parse(process.env.WORKERIDS);
+
+            for (const owner of hr.range(contents.id, 3)) {
+              if (owner === process.env.ID) continue;
+
+              if (this.cacheMiss(workers[owner], contents.id) === true) {
+                list = shoppingLists[contents.id];
+                break;
+              } 
+            }
+          }
+
+          if (!list) throw new Error("List could not be fetched.");
+
           const fetchReply = {
             type: "fetch",
             message: "List has been fetched.",
@@ -168,7 +189,7 @@ async function workerComms(listReceiver: zmq.Reply) {
             await listReceiver.send(JSON.stringify({type: "ACK"}));
             break;
           case "give":
-            const reply = {list: shoppingLists[msg.id].toJSON()};
+            const reply = {list: shoppingLists[msg.id]?.toJSON()};
             await listReceiver.send(JSON.stringify(reply));
             break;
           case "transfer":
