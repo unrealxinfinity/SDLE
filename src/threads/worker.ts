@@ -79,7 +79,7 @@ async function cacheMiss(port: number, listID: string) {
 
   const msg = JSON.parse(((await requester.receive()).toString()));
   if (msg.list) {
-    shoppingLists[listID] = msg.list;
+    shoppingLists[listID] = PNShoppingMap.fromJSON(msg.list);
     return true;
   }
   return false;
@@ -150,7 +150,7 @@ async function processRequests(sock: zmq.Request) {
             for (const owner of hr.range(contents.id, 3)) {
               if (owner === process.env.ID) continue;
 
-              if (this.cacheMiss(workers[owner], contents.id) === true) {
+              if (await cacheMiss(workers[owner], contents.id) === true) {
                 list = shoppingLists[contents.id];
                 break;
               } 
