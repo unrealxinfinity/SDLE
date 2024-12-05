@@ -45,6 +45,29 @@ export default async function workerProcess() {
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
 }
 
+async function syncList(list: string) {
+  const workers = JSON.parse(process.env.WORKERIDS);
+  const owners = hr.range(list, 3);
+
+  for (const owner of owners) {
+    if (owner === process.env.ID) continue;
+    const requester = new zmq.Request();
+    requester.connect(`tcp://127.0.0.1:${workers[owner]}`);
+
+    const request = {
+      type: "give",
+      id: list
+    };
+  
+    await requester.send(JSON.stringify(request));
+  
+    const msg = JSON.parse(((await requester.receive()).toString()));
+    if (msg.list) {
+      shoppingLists[list].join(PNShoppingMap.fromJSON(msg.list));
+    }
+  }
+}
+
 async function syncLists() {
   const workers = JSON.parse(process.env.WORKERIDS);
   for (const worker in workers) {
