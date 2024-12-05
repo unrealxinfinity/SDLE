@@ -61,7 +61,8 @@ async function syncLists() {
 
     const reply = JSON.parse(((await requester.receive()).toString()));;
     for (const list in reply) {
-      shoppingLists[list] = PNShoppingMap.fromJSON(reply[list], null, list);
+      if (!(list in shoppingLists)) shoppingLists[list] = PNShoppingMap.fromJSON(reply[list], null, list);
+      else shoppingLists[list].join(PNShoppingMap.fromJSON(reply[list], null , list));
     }
   }
 }
@@ -204,8 +205,8 @@ async function workerComms(listReceiver: zmq.Reply) {
             const localHr = buildHashRing(JSON.parse(process.env.WORKERIDS));
             localHr.add(newNode);
             for (const list in shoppingLists) {
-              const owner = localHr.get(list);
-              if (owner === msg.id) {
+              const owners = localHr.range(list, 3);
+              if (owners.includes(msg.id)) {
                 toTransfer[list] = shoppingLists[list];
                 delete shoppingLists[list];
               }
