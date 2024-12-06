@@ -55,8 +55,9 @@ async function syncList(list: string) {
     requester.connect(`tcp://127.0.0.1:${workers[owner]}`);
 
     const request = {
-      type: "give",
-      id: list
+      type: "sync",
+      id: list,
+      list: shoppingLists[list].toJSON()
     };
   
     await requester.send(JSON.stringify(request));
@@ -220,6 +221,14 @@ async function workerComms(listReceiver: zmq.Reply) {
           case "give":
             const reply = {list: shoppingLists[msg.id]?.toJSON()};
             await listReceiver.send(JSON.stringify(reply));
+            break;
+          case "sync":
+            if (!(msg.id in shoppingLists)) {
+              shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
+            }
+            shoppingLists[msg.id].join(PNShoppingMap.fromJSON(msg.list, null, msg.id));
+            const syncReply = {list: shoppingLists[msg.id].toJSON()};
+            await listReceiver.send(JSON.stringify(syncReply));
             break;
           case "transfer":
             const toTransfer = {};
