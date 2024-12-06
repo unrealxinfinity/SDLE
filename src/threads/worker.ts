@@ -3,9 +3,6 @@ import * as zmq from "zeromq";
 import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
-const lists = {};
-lists[`${process.env.ID}-testlist`] = { banana: 1 };
-lists[`${process.env.ID}-testlist2`] = { apples: 3 };
 let hr: HashRing | null = null;
 const shoppingLists: {[key: string]: PNShoppingMap} = {};
 
@@ -207,7 +204,6 @@ async function workerComms(listReceiver: zmq.Reply) {
 
         switch (msg.type) {
           case "killed":
-            lists[msg.id] = msg.list;
             shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
 
             await listReceiver.send(JSON.stringify({type: "ACK"}));
