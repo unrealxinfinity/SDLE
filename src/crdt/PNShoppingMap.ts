@@ -60,7 +60,7 @@ class PNShoppingMap{
         for (let shoppingList of this.inc.values()){
             if(shoppingList.has(item)){
                 const [notBought,bought] = shoppingList.get(item);
-                shoppingList.set(item,[0,bought+notBought]);
+                shoppingList.set(item,[notBought,bought+notBought]);
             }
             else{
                 throw new Error("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
