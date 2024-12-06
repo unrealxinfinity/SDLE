@@ -123,6 +123,7 @@ async function processRequests(sock: zmq.Request) {
         case "kill":
           for (const list in shoppingLists) {
             const responsible = hr.get(list);
+            await syncList(list);
             const sender = new zmq.Request();
             console.log(
               `tcp://127.0.0.1:${contents.workerIds[responsible]}`
@@ -133,7 +134,7 @@ async function processRequests(sock: zmq.Request) {
 
             while (true) {
               const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
-              sender.send(JSON.stringify(msg));
+              await sender.send(JSON.stringify(msg));
 
               const [rep] = await sender.receive();
               const repObj = JSON.parse(rep.toString());
@@ -142,16 +143,17 @@ async function processRequests(sock: zmq.Request) {
           }
           
           const confirmation = {type: "i am dead"}
-          sock.send([msg[0], "", JSON.stringify(confirmation)]);
+          await sock.send([msg[0], "", JSON.stringify(confirmation)]);
           break;
         case "upload":
           const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
           shoppingLists[contents.id] = newList;
+          //syncList(contents.id);
           const uploadReply = {
             type: "upload",
             message: `List ${contents.id} has been uploaded.`
           };
-          sock.send([msg[0], "", JSON.stringify(uploadReply)]);
+          await sock.send([msg[0], "", JSON.stringify(uploadReply)]);
           break;
         case "update":
           const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
@@ -161,11 +163,12 @@ async function processRequests(sock: zmq.Request) {
           else {
             shoppingLists[contents.id].join(receivedList);
           }
+          //syncList(contents.id);
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`
           };
-          sock.send([msg[0], "", JSON.stringify(updateReply)]);
+          await sock.send([msg[0], "", JSON.stringify(updateReply)]);
           break;
         case "fetch":
           let list = shoppingLists[contents.id];
@@ -189,18 +192,18 @@ async function processRequests(sock: zmq.Request) {
             message: "List has been fetched.",
             list: list.toJSON()
           };
-          sock.send([msg[0], "", JSON.stringify(fetchReply)]);
+          await sock.send([msg[0], "", JSON.stringify(fetchReply)]);
           break;
         default:
           const reply = {
             type: contents.type,
             message: `${contents.type} to you too`,
           };
-          sock.send([msg[0], "", JSON.stringify(reply)]);
+          await sock.send([msg[0], "", JSON.stringify(reply)]);
           break;
       }
     } catch (e) {
-      sock.send([msg[0], "", JSON.stringify({type: "error", message: "Error in operation."})]);
+      await sock.send([msg[0], "", JSON.stringify({type: "error", message: "Error in operation."})]);
     }
   }
 }
@@ -209,7 +212,7 @@ async function workerComms(listReceiver: zmq.Reply) {
   for await (const recieved of listReceiver) {
     try {
         const msg = JSON.parse(recieved.toString());
-        console.log(msg);
+        //console.log(msg);
 
         switch (msg.type) {
           case "killed":
@@ -248,7 +251,7 @@ async function workerComms(listReceiver: zmq.Reply) {
         }
     } catch (e) {
         console.error(e);
-        listReceiver.send(JSON.stringify({type: "NACK"}));
+        await listReceiver.send(JSON.stringify({type: "NACK"}));
     }
   }
 }
