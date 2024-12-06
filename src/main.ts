@@ -174,8 +174,8 @@ async function handleInput(rl : readline.Interface, state : state){
     const help_text1 : string = `Type one of the following commands:
        -"list" to list the shopping lists you are a part of;
        -"load --id" to load a shopping list;
-       -"create --name" to create a new shopping list;
-       -"pick --name" to pick a shopping list;
+       -"create --listname" to create a new shopping list;
+       -"pick --listname" to pick a shopping list;
        -"close" to exit the program;\n\n`;
 
     const help_text2 : string = `Type one of the following commands:
@@ -186,7 +186,8 @@ async function handleInput(rl : readline.Interface, state : state){
        -"pull" to pull changes from the server;
        -"list" to list the shopping lists you are a part of;
        -"load --id" to load a shopping list;
-       -"create --name" to create a new shopping list;
+       -"create --listname" to create a new shopping list;
+       -"pick --listname" to pick a shopping list;
        -"close" to exit the program;\n\n`;
 
 
