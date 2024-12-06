@@ -146,16 +146,6 @@ async function processRequests(sock: zmq.Request) {
           const confirmation = {type: "i am dead"}
           await sock.send([msg[0], "", JSON.stringify(confirmation)]);
           break;
-        case "upload":
-          const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-          shoppingLists[contents.id] = newList;
-          //syncList(contents.id);
-          const uploadReply = {
-            type: "upload",
-            message: `List ${contents.id} has been uploaded.`
-          };
-          await sock.send([msg[0], "", JSON.stringify(uploadReply)]);
-          break;
         case "update":
           const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
           if (!(contents.id in shoppingLists)) {
