@@ -1,6 +1,6 @@
 class PNShoppingMap{
-    private inc: Map<string,Map<string,number>>
-    private dec: Map<string,Map<string,number>>
+    private inc: Map<string,Map<string,[number,number]>>
+    private dec: Map<string,Map<string,[number,number]>>
     private id : string;
     private clientId : string;
     constructor(clientId: string="",shoppingListId: string=""){  
@@ -25,11 +25,12 @@ class PNShoppingMap{
         if(quantity<0){
             throw new Error("Quantity must be positive");
         }
+        
         if(this.inc.get(this.clientId).has(item)){
-            const currentQuantity = this.inc.get(this.clientId).get(item);
-            this.inc.get(this.clientId).set(item,currentQuantity+quantity);
+            const [notBought,bought] = this.inc.get(this.clientId).get(item);
+            this.inc.get(this.clientId).set(item,[notBought+quantity,bought]);
         }else{
-            this.inc.get(this.clientId).set(item,quantity);
+            this.inc.get(this.clientId).set(item,[quantity,0]);
         }
     }
     /**
@@ -46,16 +47,53 @@ class PNShoppingMap{
             if(this.calcTotal(item)-quantity<0){
                 throw new Error("Can't remove more than what shopping list has for client:" + this.clientId + "in cart: "+this.id);
             }
-            const currentQuantity = this.dec.get(this.clientId).get(item);
-            this.dec.get(this.clientId).set(item,currentQuantity+quantity);
+            const [notBought,bought] = this.dec.get(this.clientId).get(item);
+            this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
         }else{
-            this.dec.get(this.clientId).set(item,quantity);
+            this.dec.get(this.clientId).set(item,[quantity,0]);
         }
     }
     /**
+     * Sets the items that are not bought into bought items
+     */
+    setBought(item:string){
+        for (let shoppingList of this.inc.values()){
+            if(shoppingList.has(item)){
+                const [notBought,bought] = shoppingList.get(item);
+                shoppingList.set(item,[0,bought+notBought]);
+            }
+            else{
+                throw new Error("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
+            }
+        }
+    }
+    /**
+     * Deletes the bought items from the shopping list
+     * @param item 
+     */
+    cleanBought(item:string){
+        for (let [key,shoppingList] of this.dec){
+            let shoppingListInc = this.inc.get(key);
+            let [_,boughtInc] = shoppingListInc.get(item);
+            // If the item is not present in the inc map, then it was not bought
+            if(!shoppingListInc.has(item)){
+                throw new Error("Item not present and not bought in shopping list for client:" + this.clientId + "in cart: "+this.id);
+            }
+            // If the item is present in the dec map and has cleanBoughtDec, then the bought items were removed 
+            else if (shoppingList.has(item)){
+                const [notBoughtDec,cleanBoughtDec] = shoppingList.get(item);
+                shoppingList.set(item,[notBoughtDec,cleanBoughtDec+boughtInc]);
+            }
+            // If the item isnt present in the dec map, means there werent any deletes from the list of not bought items and the bought items are to be deleted;
+            else{
+                shoppingList.set(item,[0,boughtInc]);
+            }
+        }
+    }    
+    /**
      *   Method to convert a map to an object
      */
-    private mapToObject(map: Map<string, Map<string, number>>): object {
+    private mapToObject(map: Map<string, Map<string, [number,number]>>): object {
         const obj = {};
         map.forEach((value, key) => {
         obj[key] = Object.fromEntries(value);
@@ -74,8 +112,8 @@ class PNShoppingMap{
     /**
      *  Method to convert an object to a map
      */ 
-    private static objectToMap(obj: object): Map<string, Map<string, number>> {
-        const map = new Map<string, Map<string, number>>();
+    private static objectToMap(obj: object): Map<string, Map<string, [number,number]>> {
+        const map = new Map<string, Map<string, [number,number]>>();
         Object.entries(obj).forEach(([key, value]) => {
         map.set(key, new Map(Object.entries(value as object)));
         });
@@ -96,27 +134,47 @@ class PNShoppingMap{
     /**
      * Calculates the total amount of an item in the shopping list for the client of this PNShoppingMap
      * @param item 
-     * @returns {number} total amount of the item in the shopping list belonging to the client of this PNShoppingMap
+     * @param readBought boolean to read the total amount of bought items or not
+     * @returns {number} total amount of the item in the shopping list belonging to the client of this PNShoppingMap or total amount of item bought
      */
-    private calcTotal(item:string){
+    private calcTotal(item:string,readBought=false){
         let itemInc = 0;
+        let itemIncBought = 0;
         let itemDec = 0;
+        let itemDecBought = 0;
         //sum the incs of each client
         for (let shoppingList of this.inc.values()){
+            if(shoppingList.size===0){
+                continue;
+            }
             if(shoppingList.has(item)){
-                itemInc += shoppingList.get(item)
+                const [notBought,bought] = shoppingList.get(item);
+                itemInc += notBought
+                itemIncBought += bought;
             }
         }
-        console.log(this.dec.values())
         //sum the decs of each client
         for (let shoppingList2 of this.dec.values()){
+            if(shoppingList2.size===0){
+                continue;
+            }
             if(!shoppingList2.has(item)){
                 continue
             }
-            itemDec += shoppingList2.get(item);
+            const [notBought,bought] = shoppingList2.get(item);
+
+            itemDec += notBought;
+            itemDecBought += bought;
         }
-        return itemInc-itemDec;
+
+        if(readBought){
+            return (itemIncBought)-(itemDecBought);
+        }
+        else{
+            return (itemInc)-(itemDec);
+        }
     }
+   
     /**
      * Merge function to join the shopping lists of this client and other;
      * @param {PNShoppingMap} other shopping list
@@ -153,17 +211,18 @@ class PNShoppingMap{
      * @param thisList 
      * @param other 
      */
-    private max(thisList:Map<string,number>,other:Map<string,number>){
+    private max(thisList:Map<string,[number,number]>,other:Map<string,[number,number]>){
         // for each of the items in the other list, check if this itemlist has it, if yes chooses the max pn counter, else add the new item from the other list.
        if(other){
-            other.forEach((quantity,item)=>{
+            other.forEach(([notBought,bought],item)=>{
                 if(thisList.has(item)){
-                    const thisQuantity = thisList.get(item);
-                    const max = Math.max(quantity,thisQuantity);
-                    thisList.set(item,max);
+                    const [thisNotBought,thisBought] = thisList.get(item);
+                    const maxNotBought = Math.max(notBought,thisNotBought);
+                    const maxBought = Math.max(bought,thisBought);
+                    thisList.set(item,[maxNotBought,maxBought]);
                 }
                 else{
-                    thisList.set(item,quantity);
+                    thisList.set(item,[notBought,bought]);
                 }
             });
        }
@@ -174,8 +233,8 @@ class PNShoppingMap{
       
     }
 
-    read(item:string){
-       return this.calcTotal(item) ?? 0;
+    read(item:string,readBought=false){
+       return this.calcTotal(item,readBought) ?? 0;
     }
     getClientId(){
         return this.clientId;
@@ -189,10 +248,10 @@ class PNShoppingMap{
     setID(id:string){
         this.id = id;
     }
-    setInc(inc:Map<string,Map<string,number>>){
+    setInc(inc:Map<string,Map<string,[number,number]>>){
         this.inc = inc;
     }
-    setDec(dec:Map<string,Map<string,number>>){
+    setDec(dec:Map<string,Map<string,[number,number]>>){
         this.dec = dec;
     }
 }
