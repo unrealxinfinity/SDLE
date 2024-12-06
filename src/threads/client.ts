@@ -17,7 +17,7 @@ async function clientProcess() {
   list.add("flour", 32);
 
   const uploadMsg = {
-    type: "upload",
+    type: "update",
     id: msg.toString(),
     list: list.toJSON()
   };

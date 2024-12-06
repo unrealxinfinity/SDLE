@@ -51,7 +51,7 @@ async function syncList(list: string) {
 
   for (const owner of owners) {
     if (owner === process.env.ID) continue;
-    const requester = new zmq.Request();
+    const requester = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
     requester.connect(`tcp://127.0.0.1:${workers[owner]}`);
 
     const request = {
@@ -63,6 +63,7 @@ async function syncList(list: string) {
     await requester.send(JSON.stringify(request));
   
     const msg = JSON.parse(((await requester.receive()).toString()));
+    requester.disconnect(`tcp://127.0.0.1:${workers[owner]}`);
     if (msg.list) {
       shoppingLists[list].join(PNShoppingMap.fromJSON(msg.list));
     }
@@ -163,7 +164,7 @@ async function processRequests(sock: zmq.Request) {
           else {
             shoppingLists[contents.id].join(receivedList);
           }
-          //syncList(contents.id);
+          await syncList(contents.id);
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`
