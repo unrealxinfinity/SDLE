@@ -6,6 +6,7 @@ import cluster from "node:cluster";
 import { version } from "os";
 
 enum ConsoleState{
+    LOGIN, 
     START,
     SHOPPING_LIST
 }
@@ -36,10 +37,9 @@ const readJsonFile = (filePath: string): any => {
     return JSON.parse(data);
 }
 
-function readFromLocalStorage(){
-    if(fs.existsSync("localStorage"+".json")){
-        const localStorageContents = readJsonFile("localStorage");
-        const userName = localStorageContents["name"];
+function readFromLocalStorage(userName : string | null){
+    if(userName != null && fs.existsSync("./localStorage/"+userName+".json")){
+        const localStorageContents = readJsonFile("./localStorage/"+userName);
         for(const shoppingListId in localStorageContents){
             if(shoppingListId == "name") break;
             const shoppingListContents = localStorageContents[shoppingListId];
@@ -68,9 +68,7 @@ function readFromLocalStorage(){
             const state : state = {consoleState: ConsoleState.START, items: items, shoppingListId: shoppingListId, crdt: crdt, sock: null, persist: false}; 
             userStates.set(shoppingListId, state);
         }
-        return userName;
     }
-    return generateGUId();
 }
 
 function generateGUId() : string {
@@ -81,7 +79,7 @@ function generateGUId() : string {
 
 
 
-async function handleInput(rl : readline.Interface, userName : string, state : state){
+async function handleInput(rl : readline.Interface, state : state){
 
     function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
         return new Promise((resolve) => {
@@ -194,8 +192,48 @@ async function handleInput(rl : readline.Interface, userName : string, state : s
 
     }
 
+    function persistLocalStorage(userName : string){
+        return setInterval(async () => {
+            if(persist){           
+                persist = false;
+                const data = {}
+                for(const state of userStates.values()){
+                    const items = [];
+                    for(const item of state.items.values()){
+                        items.push(item.quantity+"x"+item.name)
+                    }
+    
+                    const crdt_json = JSON.parse(state.crdt.toJSON());
+    
+                    let listName = "";
+                    for(const [name, id] of lists){
+                        if(id == state.shoppingListId){
+                            listName = name;
+                        }
+                    }
+    
+                    data[state.shoppingListId] = {
+                        "listName": listName,
+                        "items": items,
+                        "inc": crdt_json.inc,
+                        "dec": crdt_json.dec
+                    };   
+    
+                }
+                try{
+                    fs.writeFileSync('localStorage/'+userName+'.json', JSON.stringify(data, null, 2), 'utf8')
+                } catch(error){
+                    console.log("Couldn't write to file");
+                }
+                persist = true;
+            }
+        }, 10)
+    }
+
+    
 
 
+    const login_text : string = `Type "login --name" to login to user account\n`;
     const initial_text : string = `Type "help" to view the commands\n`;
 
     const help_text1 : string = `Type one of the following commands:
@@ -220,44 +258,10 @@ async function handleInput(rl : readline.Interface, userName : string, state : s
 
 
     let persist = true;
-    const persistingDataInterval = setInterval(async () => {
-        if(persist){           
-            persist = false;
-            const data = {}
-            for(const state of userStates.values()){
-                const items = [];
-                for(const item of state.items.values()){
-                    items.push(item.quantity+"x"+item.name)
-                }
+    let persistingDataInterval = null;
 
-                const crdt_json = JSON.parse(state.crdt.toJSON());
-
-                let listName = "";
-                for(const [name, id] of lists){
-                    if(id == state.shoppingListId){
-                        listName = name;
-                    }
-                }
-
-                data[state.shoppingListId] = {
-                    "listName": listName,
-                    "items": items,
-                    "inc": crdt_json.inc,
-                    "dec": crdt_json.dec
-                };   
-
-            }
-            data["name"] = userName;
-            try{
-                fs.writeFileSync('localStorage.json', JSON.stringify(data, null, 2), 'utf8')
-            } catch(error){
-                console.log("Couldn't write to file");
-            }
-            persist = true;
-        }
-    }, 10)
-
-    let text : string = initial_text;
+    let text : string = login_text;
+    let userName : string = null;
     
     const commands : Array<string> = []//readJsonFile('./test').commands;
     while(true){
@@ -273,6 +277,16 @@ async function handleInput(rl : readline.Interface, userName : string, state : s
         if(answerArrayLength > 0){
             const command : string = answerArray[0].toLowerCase();
             switch(state.consoleState){
+                case ConsoleState.LOGIN:{
+                    if(command == "login" && answerArrayLength == 2){
+                        userName = answerArray[1];
+                        readFromLocalStorage(userName);
+                        persistingDataInterval = persistLocalStorage(userName);
+                        text = initial_text;
+                        state.consoleState = ConsoleState.START;
+                    }
+                    break;
+                }
                 case ConsoleState.SHOPPING_LIST:{
                     if(command == "view" && answerArrayLength == 1){
                         viewShoppingList(state);
@@ -325,16 +339,16 @@ async function handleInput(rl : readline.Interface, userName : string, state : s
                         viewShoppingList(state);
                         text = initial_text;
                     }
+                    else if(command == "help" && answerArrayLength == 1){
+                        if(state.consoleState == ConsoleState.START) text = help_text1;
+                        else if(state.consoleState == ConsoleState.SHOPPING_LIST) text = help_text2;
+                    }
                     break;
                 }
                 default:{
                     break;
                 }
 
-            }
-            if(command == "help" && answerArrayLength == 1){
-                if(state.consoleState == ConsoleState.START) text = help_text1;
-                else if(state.consoleState == ConsoleState.SHOPPING_LIST) text = help_text2;
             }
             if(command == "close" && answerArrayLength == 1){
                 break;
@@ -344,9 +358,11 @@ async function handleInput(rl : readline.Interface, userName : string, state : s
     }
     
     rl.close();
-    setTimeout(() => {
-        clearInterval(persistingDataInterval);
-    }, 11);
+    if(persistingDataInterval != null){
+        setTimeout(() => {
+            clearInterval(persistingDataInterval);
+        }, 11);
+    }
 
     
 
@@ -363,10 +379,9 @@ const rl : readline.Interface = readline.createInterface({
 
 
 
-let state : state = {consoleState: ConsoleState.START, items: new Map(), shoppingListId: "", crdt: null, sock: null, persist: false}; 
+let state : state = {consoleState: ConsoleState.LOGIN, items: new Map(), shoppingListId: "", crdt: null, sock: null, persist: false}; 
 
-const userName = readFromLocalStorage();
-handleInput(rl, userName, state);
+handleInput(rl, state);
 
 
 
