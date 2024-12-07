@@ -22,16 +22,20 @@ class PNShoppingMap{
      * @param quantity 
      */
     add(item: string,quantity:number = 1){
-        if(quantity<0){
-            throw new Error("Quantity must be positive");
+        if(quantity<=0){
+            console.log("Quantity must be positive");
+            return;
         }
         
         if(this.inc.get(this.clientId).has(item)){
             const [notBought,bought] = this.inc.get(this.clientId).get(item);
             this.inc.get(this.clientId).set(item,[notBought+quantity,bought]);
+            console.log(item + " was updated from the cart!");
         }else{
             this.inc.get(this.clientId).set(item,[quantity,0]);
+            console.log(quantity + "x " + item + " was added to the cart!")
         }
+
     }
     /**
      * Removes an item by certain quantity for the shopping list belonging to this clientID
@@ -39,18 +43,22 @@ class PNShoppingMap{
      * @param quantity 
      */
     remove(item:string,quantity:number = 1){
-        if(quantity<0){
-            throw new Error("Quantity must be positive for client:" + this.clientId + "in cart: "+this.id);
+        if(quantity<=0){
+            console.log("Quantity must be positive for client:" + this.clientId + "in cart: "+this.id);
+            return;
         }
         
         if(this.dec.get(this.clientId).has(item)){
             if(this.calcTotal(item)-quantity<0){
-                throw new Error("Can't remove more than what shopping list has for client:" + this.clientId + "in cart: "+this.id);
+                console.log("Can't remove more than what shopping list has for client:" + this.clientId + "in cart: "+this.id);
+                return;
             }
             const [notBought,bought] = this.dec.get(this.clientId).get(item);
             this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
+            console.log(item + " was updated from the cart!");
         }else{
             this.dec.get(this.clientId).set(item,[quantity,0]);
+            console.log(item + " was removed from the cart!");
         }
     }
     /**
@@ -137,7 +145,7 @@ class PNShoppingMap{
      * @param readBought boolean to read the total amount of bought items or not
      * @returns {number} total amount of the item in the shopping list belonging to the client of this PNShoppingMap or total amount of item bought
      */
-    private calcTotal(item:string,readBought=false){
+    calcTotal(item:string,readBought=false){
         let itemInc = 0;
         let itemIncBought = 0;
         let itemDec = 0;
@@ -242,6 +250,15 @@ class PNShoppingMap{
     getId(){
         return this.id;
     }
+    getAllItems(){
+        const allItems : Set<string> = new Set();
+        for(const items of this.inc.values()){
+            for(const [name, [quantity, boughtQuantity]] of items){
+                allItems.add(name);
+            }
+        }
+        return allItems;
+    }
     setClientId(clientId:string){
         this.clientId = clientId;
     }
@@ -251,20 +268,20 @@ class PNShoppingMap{
     setInc(inc:Map<string,Map<string,[number,number]>>){
         this.inc = inc;
     }
-    addInc(clientID : string, item : string, quantity : number){
+    addInc(clientID : string, item : string, quantity : number, quantityBought : number){
         if(!this.inc.has(clientID)){
             this.inc.set(clientID, new Map());
         }
-        this.inc.get(clientID).set(item, [quantity, 0]);
+        this.inc.get(clientID).set(item, [quantity, quantityBought]);
     }
     setDec(dec:Map<string,Map<string,[number,number]>>){
         this.dec = dec;
     }
-    addDec(clientID : string, item : string, quantity : number){
+    addDec(clientID : string, item : string, quantity : number, quantityBought : number){
         if(!this.dec.has(clientID)){
             this.dec.set(clientID, new Map());
         }
-        this.dec.get(clientID).set(item, [quantity, 0]);
+        this.dec.get(clientID).set(item, [quantity, quantityBought]);
     }
 
 }

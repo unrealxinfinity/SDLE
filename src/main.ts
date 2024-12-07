@@ -18,7 +18,6 @@ interface item {
 
 interface state{
     consoleState : ConsoleState;
-    items : Map<string, item>;
     shoppingListId : string;
     crdt : PNShoppingMap | null;
     sock : zmq.Request | null;
@@ -43,29 +42,24 @@ function readFromLocalStorage(userName : string | null){
         for(const shoppingListId in localStorageContents){
             if(shoppingListId == "name") break;
             const shoppingListContents = localStorageContents[shoppingListId];
-            const items = new Map();
             const crdt = new PNShoppingMap(userName, shoppingListId);
             lists.set(shoppingListContents["listName"], shoppingListId);
-            for(const item of shoppingListContents["items"]){
-                const quantity = item.slice(0, item.indexOf('x'));
-                const name = item.slice(item.indexOf('x')+1);
-                const newItem : item = {name: name, quantity: quantity};
-                items.set(name, newItem);
-            }
             
             for(const userID in shoppingListContents["inc"]){
                 for(const itemName in shoppingListContents["inc"][userID]){
-                    const quantity = shoppingListContents["inc"][userID][itemName]
-                    crdt.addInc(userName, itemName, quantity);
+                    const [quantity, quantityBought] = shoppingListContents["inc"][userID][itemName]
+                    crdt.addInc(userName, itemName, quantity, quantityBought);
                 }
             }
             for(const userID in shoppingListContents["dec"]){
                 for(const itemName in shoppingListContents["dec"][userID]){
-                    const quantity = shoppingListContents["dec"][userID][itemName]
-                    crdt.addDec(userName, itemName, quantity);
+                    const [quantity, quantityBought] = shoppingListContents["dec"][userID][itemName]
+                    crdt.addDec(userName, itemName, quantity, quantityBought);
                 }
             }
-            const state : state = {consoleState: ConsoleState.START, items: items, shoppingListId: shoppingListId, crdt: crdt, sock: null, persist: false}; 
+            console.log(crdt.toJSON());
+            const state : state = {consoleState: ConsoleState.START, shoppingListId: shoppingListId, crdt: crdt, sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: false}; 
+            state.sock.connect(frontAddr);
             userStates.set(shoppingListId, state);
         }
     }
@@ -91,8 +85,10 @@ async function handleInput(rl : readline.Interface, state : state){
     
     function viewShoppingList(state : state){
         console.log("                SHOPPING LIST              \n");
-        for(const item of state.items.values()){
-            console.log("   - " + item.quantity + "x " + item.name + ";");
+        
+        for(const itemName of state.crdt.getAllItems()){
+            const quantity = state.crdt.calcTotal(itemName);
+            console.log("   - " + quantity + "x " + itemName + ";");
         }
     
     }
@@ -106,7 +102,7 @@ async function handleInput(rl : readline.Interface, state : state){
     function fetchShoppingList(id : string, state : state){
         //NOT FINISHED DONT USE
         state.shoppingListId = id;
-        state.items.clear();
+        //state.items.clear();
         state.consoleState = ConsoleState.SHOPPING_LIST;
 
 
@@ -135,7 +131,8 @@ async function handleInput(rl : readline.Interface, state : state){
             await state.sock.send(JSON.stringify(createId));
             const id : string = (await state.sock.receive()).toString();*/
             const id = generateGUId();
-            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, items: new Map(), shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: state.sock, persist: true}
+            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: true}
+            newState.sock.connect(frontAddr);
             lists.set(name, id);
             userStates.set(id, newState);
             state = pickShoppingList(name, state);
@@ -150,60 +147,44 @@ async function handleInput(rl : readline.Interface, state : state){
 
 
     
-    function addItem(name : string, quantity : number = 1, state : state){
-        if(quantity > 0 && !state.items.has(name)){
-            const item : item = {name: name, quantity: quantity};
-            state.items.set(name, item);
-            state.crdt.add(name, quantity);
-        }
-        else if(quantity > 0){
-            const item : item = state.items.get(name);
-            item.quantity += quantity;
-            state.items.set(name, item);
-            state.crdt.add(name, quantity)
-        }
 
-
-
-    }
+    async function pull(state : state){
+        const fetchMsg = {
+            type: "fetch",
+            id: state.shoppingListId.toString()
+        };
     
-    function remItem(name : string, state : state, quantity : number){
-        if(state.items.has(name)){
-            if(quantity > 0){
-                const item = state.items.get(name);
-                state.crdt.remove(name, Math.min(item.quantity, quantity));
-                item.quantity -= quantity;
-
-                if(item.quantity <= 0) state.items.delete(name);
-                else state.items.set(name, item);
-            }
-        }
-
-
-
+        const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
+    
+        const fetchReply = JSON.parse((await state.sock.receive()).toString());
+        console.log(fetchReply.message);
+        console.log(fetchReply.list);
+        console.log(fetchReply);
     }
 
-    function pull(state : state){
-       
+    async function push(state : state){
+        const updateMsg = {
+            type: "update",
+            id: state.shoppingListId.toString(),
+            list: state.crdt.toJSON()
+        };
+        
+        const updateRequest = await state.sock.send(JSON.stringify(updateMsg));
+    
+        const updateReply = JSON.parse((await state.sock.receive()).toString());
 
-    }
-
-    function push(state : state){
-
+        console.log(updateReply.message);
     }
 
     function persistLocalStorage(userName : string){
         return setInterval(async () => {
-            if(persist){           
+            if(persist && userStates.size > 0){           
                 persist = false;
                 const data = {}
                 for(const state of userStates.values()){
-                    const items = [];
-                    for(const item of state.items.values()){
-                        items.push(item.quantity+"x"+item.name)
-                    }
     
                     const crdt_json = JSON.parse(state.crdt.toJSON());
+
     
                     let listName = "";
                     for(const [name, id] of lists){
@@ -214,7 +195,6 @@ async function handleInput(rl : readline.Interface, state : state){
     
                     data[state.shoppingListId] = {
                         "listName": listName,
-                        "items": items,
                         "inc": crdt_json.inc,
                         "dec": crdt_json.dec
                     };   
@@ -294,25 +274,26 @@ async function handleInput(rl : readline.Interface, state : state){
                     else if(command == "add" && answerArrayLength == 3){
                         const itemQuantity : number = Number(answerArray[1])
                         const itemName : string = answerArray[2];
-                        addItem(itemName, itemQuantity, state);
+                        state.crdt.add(itemName, itemQuantity);
                     }
                     else if(command == "rem" && answerArrayLength == 2){
                         const itemName : string = answerArray[1];
-                        if(state.items.has(itemName)){
-                            remItem(itemName, state, state.items.get(itemName).quantity);
+                        const allItems = state.crdt.getAllItems();
+                        if(allItems.has(itemName)){
+                            state.crdt.remove(itemName, state.crdt.calcTotal(itemName));
                         }
                         
                     }
                     else if(command == "rem" && answerArrayLength == 3){
                         const itemQuantity : number = Number(answerArray[1])
                         const itemName : string = answerArray[2];
-                        remItem(itemName, state, itemQuantity);
+                        state.crdt.remove(itemName, itemQuantity);
                     }
                     else if(command == "push" && answerArrayLength == 1){
-                        push(state)
+                        await push(state)
                     }
                     else if(command == "pull" && answerArrayLength == 1){
-                        pull(state)
+                        await pull(state)
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
@@ -364,6 +345,12 @@ async function handleInput(rl : readline.Interface, state : state){
         }, 11);
     }
 
+    for(const userState of userStates.values()){
+        if(userState.sock != null){
+            userState.sock.close();
+        }
+    }
+
     
 
 }
@@ -379,7 +366,7 @@ const rl : readline.Interface = readline.createInterface({
 
 
 
-let state : state = {consoleState: ConsoleState.LOGIN, items: new Map(), shoppingListId: "", crdt: null, sock: null, persist: false}; 
+let state : state = {consoleState: ConsoleState.LOGIN, shoppingListId: "", crdt: null, sock: null, persist: false}; 
 
 handleInput(rl, state);
 
