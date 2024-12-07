@@ -88,7 +88,7 @@ async function handleInput(rl : readline.Interface, state : state){
         
         for(const itemName of state.crdt.getAllItems()){
             const quantity = state.crdt.calcTotal(itemName);
-            console.log("   - " + quantity + "x " + itemName + ";");
+            if(quantity > 0) console.log("   - " + quantity + "x " + itemName + ";");
         }
     
     }
@@ -99,11 +99,21 @@ async function handleInput(rl : readline.Interface, state : state){
         }
     }
 
-    function fetchShoppingList(id : string, state : state){
-        //NOT FINISHED DONT USE
-        state.shoppingListId = id;
-        //state.items.clear();
-        state.consoleState = ConsoleState.SHOPPING_LIST;
+    async function fetchShoppingList(id : string, name : string, userName : string, state : state){
+        if(!userStates.has(name)){
+            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: true}
+            newState.sock.connect(frontAddr);
+            lists.set(name, id);
+            userStates.set(id, newState);
+            await pull(userName, newState);
+            state = pickShoppingList(name, state);
+            console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
+        }
+        else{
+            console.log("The list with that name already exists. I'm sorry\n");
+        }
+
+        return state;
 
 
     }
@@ -121,15 +131,6 @@ async function handleInput(rl : readline.Interface, state : state){
 
     function createShoppingList(name : string, userName : string, state : state){
         if(!userStates.has(name)){
-            /*if(state.sock == null){
-                state.sock = new zmq.Request();
-                state.sock.connect(frontAddr);
-            }
-            const createId = {
-                type: "create",
-            };
-            await state.sock.send(JSON.stringify(createId));
-            const id : string = (await state.sock.receive()).toString();*/
             const id = generateGUId();
             const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: true}
             newState.sock.connect(frontAddr);
@@ -148,18 +149,41 @@ async function handleInput(rl : readline.Interface, state : state){
 
     
 
-    async function pull(state : state){
+    async function pull(userName : string, state : state){
         const fetchMsg = {
             type: "fetch",
             id: state.shoppingListId.toString()
         };
+
+        console.log(fetchMsg);
     
         const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
     
         const fetchReply = JSON.parse((await state.sock.receive()).toString());
         console.log(fetchReply.message);
-        console.log(fetchReply.list);
         console.log(fetchReply);
+        if(fetchReply.type == "fetch"){
+            const inc = JSON.parse(fetchReply.list.toString()).inc;
+            const dec = JSON.parse(fetchReply.list.toString()).dec;
+            const incoming_crdt = new PNShoppingMap(userName, state.shoppingListId);
+            for(const clientID in inc){
+                const items = inc[clientID];
+                for(const itemName in items){
+                    const [quantity, quantityBought] = items[itemName];
+                    incoming_crdt.addInc(clientID, itemName, quantity, quantityBought);
+                }
+            }
+            for(const clientID in dec){
+                const items = dec[clientID];
+                for(const itemName in items){
+                    const [quantity, quantityBought] = items[itemName];
+                    incoming_crdt.addDec(clientID, itemName, quantity, quantityBought);
+                }
+            }
+            state.crdt.join(incoming_crdt);
+        }
+        else if(fetchReply.type == "error"){
+        }
     }
 
     async function push(state : state){
@@ -218,7 +242,7 @@ async function handleInput(rl : readline.Interface, state : state){
 
     const help_text1 : string = `Type one of the following commands:
        -"list" to list the shopping lists you are a part of;
-       -"fetch --id" to fetch a shopping list;
+       -"fetch --id --name" to fetch a shopping list;
        -"create --listname" to create a new shopping list;
        -"pick --listname" to pick a shopping list;
        -"close" to exit the program;\n\n`;
@@ -231,7 +255,7 @@ async function handleInput(rl : readline.Interface, state : state){
        -"push" to push changes from the server;
        -"pull" to pull changes from the server;
        -"list" to list the shopping lists you are a part of;
-       -"featch --id" to fetch a shopping list;
+       -"fetch --id --name" to fetch a shopping list;
        -"create --listname" to create a new shopping list;
        -"pick --listname" to pick a shopping list;
        -"close" to exit the program;\n\n`;
@@ -293,7 +317,7 @@ async function handleInput(rl : readline.Interface, state : state){
                         await push(state)
                     }
                     else if(command == "pull" && answerArrayLength == 1){
-                        await pull(state)
+                        await pull(userName, state)
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
@@ -303,9 +327,10 @@ async function handleInput(rl : readline.Interface, state : state){
                     if(command == "list" && answerArrayLength == 1){
                         listShoppingLists(state);
                     }
-                    else if(command == "fetch" && answerArrayLength == 2){
+                    else if(command == "fetch" && answerArrayLength == 3){
                         const id :string = answerArray[1];
-                        fetchShoppingList(id, state);
+                        const name : string = answerArray[2];
+                        state = await fetchShoppingList(id, name, userName, state);
                         text = initial_text;
                         viewShoppingList(state);
                     }
