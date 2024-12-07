@@ -4,9 +4,13 @@
         "add 1 grape",
         "add 3 potato",
         "rem potato",
-        "pull",
         "add 1 banana",
+        "push",
+        "view",
         "pull",
+        "add 2 banana",
+        "rem grape",
+        "push",
         "view",
         "close"
     ]

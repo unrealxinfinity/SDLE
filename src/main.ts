@@ -1,7 +1,9 @@
 import * as readline from "readline";
-import { DeltaORMap } from "./crdt/DeltaORMap.js";
+import { PNShoppingMap } from "./crdt/PNShoppingMap.js";
 import * as fs from 'fs';
 import * as zmq from "zeromq";
+import cluster from "node:cluster";
+import { version } from "os";
 
 enum ConsoleState{
     START,
@@ -15,25 +17,72 @@ interface item {
 
 interface state{
     consoleState : ConsoleState;
-    listIds : Map<string, string>;
     items : Map<string, item>;
-    pre_sync_items : Map<string, item>;
     shoppingListId : string;
-    crdt : DeltaORMap | null;
+    crdt : PNShoppingMap | null;
     sock : zmq.Request | null;
+    persist: boolean
 }
 
 const userStates : Map<string, state> = new Map();
 
 const frontAddr = "tcp://127.0.0.1:12346";
 
+const lists : Map<string, string> = new Map();
+
+
 const readJsonFile = (filePath: string): any => {
-    const data = fs.readFileSync(filePath, 'utf-8');
+    const data = fs.readFileSync(filePath+'.json', 'utf-8');
     return JSON.parse(data);
 }
 
+function readFromLocalStorage(){
+    if(fs.existsSync("localStorage"+".json")){
+        const localStorageContents = readJsonFile("localStorage");
+        const userName = localStorageContents["name"];
+        for(const shoppingListId in localStorageContents){
+            if(shoppingListId == "name") break;
+            const shoppingListContents = localStorageContents[shoppingListId];
+            const items = new Map();
+            const crdt = new PNShoppingMap(userName, shoppingListId);
+            lists.set(shoppingListContents["listName"], shoppingListId);
+            for(const item of shoppingListContents["items"]){
+                const quantity = item.slice(0, item.indexOf('x'));
+                const name = item.slice(item.indexOf('x')+1);
+                const newItem : item = {name: name, quantity: quantity};
+                items.set(name, newItem);
+            }
+            
+            for(const userID in shoppingListContents["inc"]){
+                for(const itemName in shoppingListContents["inc"][userID]){
+                    const quantity = shoppingListContents["inc"][userID][itemName]
+                    crdt.addInc(userName, itemName, quantity);
+                }
+            }
+            for(const userID in shoppingListContents["dec"]){
+                for(const itemName in shoppingListContents["dec"][userID]){
+                    const quantity = shoppingListContents["dec"][userID][itemName]
+                    crdt.addDec(userName, itemName, quantity);
+                }
+            }
+            const state : state = {consoleState: ConsoleState.START, items: items, shoppingListId: shoppingListId, crdt: crdt, sock: null, persist: false}; 
+            userStates.set(shoppingListId, state);
+        }
+        return userName;
+    }
+    return generateGUId();
+}
 
-async function handleInput(rl : readline.Interface, state : state){
+function generateGUId() : string {
+    const timestamp : Number = new Date().getTime();
+    const random_num : Number = Math.floor(Math.random() * 1000000);
+    return `${timestamp}-${random_num}`; 
+}
+
+
+
+async function handleInput(rl : readline.Interface, userName : string, state : state){
+
     function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
         return new Promise((resolve) => {
             rl.question(text, (answer) => {
@@ -51,22 +100,23 @@ async function handleInput(rl : readline.Interface, state : state){
     }
 
     function listShoppingLists(state : state){
-        for(const [id, name] of state.listIds.entries()){
+        for(const [name, id] of lists.entries()){
             console.log("   -"+name+": " + id + ";");
         }
     }
 
-    function loadShoppingList(id : string, state : state){
+    function fetchShoppingList(id : string, state : state){
         //NOT FINISHED DONT USE
         state.shoppingListId = id;
         state.items.clear();
-        state.pre_sync_items = structuredClone(state.items)
         state.consoleState = ConsoleState.SHOPPING_LIST;
+
+
     }
 
     function pickShoppingList(name : string, state : state){
-        if(userStates.has(name)){
-            state = userStates.get(name)
+        if(lists.has(name)){
+            state = userStates.get(lists.get(name));
             state.consoleState = ConsoleState.SHOPPING_LIST;
         }
         else{
@@ -75,7 +125,7 @@ async function handleInput(rl : readline.Interface, state : state){
         return state;
     }
 
-    async function createShoppingList(name : string, state : state){
+    function createShoppingList(name : string, userName : string, state : state){
         if(!userStates.has(name)){
             /*if(state.sock == null){
                 state.sock = new zmq.Request();
@@ -87,9 +137,9 @@ async function handleInput(rl : readline.Interface, state : state){
             await state.sock.send(JSON.stringify(createId));
             const id : string = (await state.sock.receive()).toString();*/
             const id = generateGUId();
-            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, listIds: state.listIds, items: new Map(), pre_sync_items: new Map(), shoppingListId: id, crdt: new DeltaORMap(generateGUId(), ""), sock: state.sock}
-            newState.listIds.set(id, name);
-            userStates.set(name, newState);
+            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, items: new Map(), shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: state.sock, persist: true}
+            lists.set(name, id);
+            userStates.set(id, newState);
             state = pickShoppingList(name, state);
             console.log("Successfully created shopping list " + name + " with id = " + id + '\n');
         }
@@ -101,71 +151,48 @@ async function handleInput(rl : readline.Interface, state : state){
     }
 
 
-    function generateGUId() : string {
-        const timestamp : Number = new Date().getTime();
-        const random_num : Number = Math.floor(Math.random() * 1000000);
-        return `${timestamp}-${random_num}`; 
-    }
     
     function addItem(name : string, quantity : number = 1, state : state){
         if(quantity > 0 && !state.items.has(name)){
             const item : item = {name: name, quantity: quantity};
             state.items.set(name, item);
+            state.crdt.add(name, quantity);
         }
         else if(quantity > 0){
             const item : item = state.items.get(name);
             item.quantity += quantity;
             state.items.set(name, item);
+            state.crdt.add(name, quantity)
         }
+
+
+
     }
     
-    function remItem(name : string, state : state, quantity : number | null = null){
+    function remItem(name : string, state : state, quantity : number){
         if(state.items.has(name)){
-            if(quantity == null){
-                state.items.delete(name);
-            }
-            else if(quantity > 0){
+            if(quantity > 0){
                 const item = state.items.get(name);
+                state.crdt.remove(name, Math.min(item.quantity, quantity));
                 item.quantity -= quantity;
+
                 if(item.quantity <= 0) state.items.delete(name);
                 else state.items.set(name, item);
             }
         }
+
+
+
     }
 
     function pull(state : state){
-        for(const item of state.items.values()){
-            if(!state.pre_sync_items.has(item.name)){
-                state.crdt.add(item.name, item.quantity)
-            }
-            else{
-                const pre_sync_item = state.pre_sync_items.get(item.name)
-                if(pre_sync_item.quantity < item.quantity){
-                    state.crdt.add(item.name, item.quantity-pre_sync_item.quantity)
-                }
-                else if(pre_sync_item.quantity > item.quantity){
-                    state.crdt.remove(item.name, pre_sync_item.quantity-item.quantity)
-                }
-            }
-
-        }
-
-        for(const item of state.pre_sync_items.values()){
-            if(!state.items.has(item.name)){
-                state.crdt.remove(item.name, item.quantity)
-            }
-        }
-
-
-
-        state.pre_sync_items = state.items
-
-        state.crdt.readAll()
-
-
+       
 
     }
 
+    function push(state : state){
+
+    }
 
 
 
@@ -173,7 +200,7 @@ async function handleInput(rl : readline.Interface, state : state){
 
     const help_text1 : string = `Type one of the following commands:
        -"list" to list the shopping lists you are a part of;
-       -"load --id" to load a shopping list;
+       -"fetch --id" to fetch a shopping list;
        -"create --listname" to create a new shopping list;
        -"pick --listname" to pick a shopping list;
        -"close" to exit the program;\n\n`;
@@ -183,16 +210,56 @@ async function handleInput(rl : readline.Interface, state : state){
        -"add --itemQuantity --itemName" to add an item to the list or to increase its quantity;
        -"rem --itemName" to remove an item from the list;
        -"rem --itemQuantity --itemName" to remove an item from the list or decrease its quantity;
+       -"push" to push changes from the server;
        -"pull" to pull changes from the server;
        -"list" to list the shopping lists you are a part of;
-       -"load --id" to load a shopping list;
+       -"featch --id" to fetch a shopping list;
        -"create --listname" to create a new shopping list;
        -"pick --listname" to pick a shopping list;
        -"close" to exit the program;\n\n`;
 
 
+    let persist = true;
+    const persistingDataInterval = setInterval(async () => {
+        if(persist){           
+            persist = false;
+            const data = {}
+            for(const state of userStates.values()){
+                const items = [];
+                for(const item of state.items.values()){
+                    items.push(item.quantity+"x"+item.name)
+                }
+
+                const crdt_json = JSON.parse(state.crdt.toJSON());
+
+                let listName = "";
+                for(const [name, id] of lists){
+                    if(id == state.shoppingListId){
+                        listName = name;
+                    }
+                }
+
+                data[state.shoppingListId] = {
+                    "listName": listName,
+                    "items": items,
+                    "inc": crdt_json.inc,
+                    "dec": crdt_json.dec
+                };   
+
+            }
+            data["name"] = userName;
+            try{
+                fs.writeFileSync('localStorage.json', JSON.stringify(data, null, 2), 'utf8')
+            } catch(error){
+                console.log("Couldn't write to file");
+            }
+            persist = true;
+        }
+    }, 10)
+
     let text : string = initial_text;
-    const commands : Array<string> = [];//readJsonFile('./test.json').commands;
+    
+    const commands : Array<string> = []//readJsonFile('./test').commands;
     while(true){
         let answer : string = "";
         if(commands.length > 0) {
@@ -217,12 +284,18 @@ async function handleInput(rl : readline.Interface, state : state){
                     }
                     else if(command == "rem" && answerArrayLength == 2){
                         const itemName : string = answerArray[1];
-                        remItem(itemName, state);
+                        if(state.items.has(itemName)){
+                            remItem(itemName, state, state.items.get(itemName).quantity);
+                        }
+                        
                     }
                     else if(command == "rem" && answerArrayLength == 3){
                         const itemQuantity : number = Number(answerArray[1])
                         const itemName : string = answerArray[2];
                         remItem(itemName, state, itemQuantity);
+                    }
+                    else if(command == "push" && answerArrayLength == 1){
+                        push(state)
                     }
                     else if(command == "pull" && answerArrayLength == 1){
                         pull(state)
@@ -235,15 +308,21 @@ async function handleInput(rl : readline.Interface, state : state){
                     if(command == "list" && answerArrayLength == 1){
                         listShoppingLists(state);
                     }
-                    else if(command == "load" && answerArrayLength == 2){
+                    else if(command == "fetch" && answerArrayLength == 2){
                         const id :string = answerArray[1];
-                        loadShoppingList(id, state);
+                        fetchShoppingList(id, state);
                         text = initial_text;
                         viewShoppingList(state);
                     }
                     else if(command == "create" && answerArrayLength == 2){
                         const name : string = answerArray[1];
-                        state = await createShoppingList(name, state);
+                        state = createShoppingList(name, userName, state);
+                        text = initial_text;
+                    }
+                    else if(command == "pick" && answerArrayLength == 2){
+                        const listName : string = answerArray[1];
+                        state = pickShoppingList(listName, state);
+                        viewShoppingList(state);
                         text = initial_text;
                     }
                     break;
@@ -252,12 +331,6 @@ async function handleInput(rl : readline.Interface, state : state){
                     break;
                 }
 
-            }
-            if(command == "pick" && answerArrayLength == 2){
-                const listName : string = answerArray[1];
-                state = pickShoppingList(listName, state);
-                viewShoppingList(state);
-                text = initial_text;
             }
             if(command == "help" && answerArrayLength == 1){
                 if(state.consoleState == ConsoleState.START) text = help_text1;
@@ -269,11 +342,16 @@ async function handleInput(rl : readline.Interface, state : state){
         }
 
     }
+    
     rl.close();
+    setTimeout(() => {
+        clearInterval(persistingDataInterval);
+    }, 11);
 
     
 
 }
+
 
 
 
@@ -283,10 +361,16 @@ const rl : readline.Interface = readline.createInterface({
     output: process.stdout
 });
 
-let state : state = {consoleState: ConsoleState.START, listIds: new Map(), items: new Map(), pre_sync_items: new Map(), shoppingListId: "", crdt: null, sock: null}; 
 
 
-handleInput(rl, state);
+let state : state = {consoleState: ConsoleState.START, items: new Map(), shoppingListId: "", crdt: null, sock: null, persist: false}; 
+
+const userName = readFromLocalStorage();
+handleInput(rl, userName, state);
+
+
+
+
 
 //rl.close();
 

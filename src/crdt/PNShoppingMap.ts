@@ -192,8 +192,21 @@ class PNShoppingMap{
     setInc(inc:Map<string,Map<string,number>>){
         this.inc = inc;
     }
+    addInc(clientID : string, item : string, quantity : number){
+        if(!this.inc.has(clientID)){
+            this.inc.set(clientID, new Map());
+        }
+        this.inc.get(clientID).set(item, quantity);
+    }
     setDec(dec:Map<string,Map<string,number>>){
         this.dec = dec;
     }
+    addDec(clientID : string, item : string, quantity : number){
+        if(!this.dec.has(clientID)){
+            this.dec.set(clientID, new Map());
+        }
+        this.dec.get(clientID).set(item, quantity);
+    }
+
 }
 export { PNShoppingMap };

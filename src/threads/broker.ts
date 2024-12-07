@@ -90,6 +90,7 @@ async function frontend(
       default:
         contents.workerIds = workerIds;
         const responsible = hashRing.get(contents.id);
+        console.log("BROKER RECEIVED FROM FRONTEND: ", msg, responsible);
         sendMessageOnInterval(JSON.stringify(contents), responsible, msg, backSvr, frontSvr);
     }
   }
