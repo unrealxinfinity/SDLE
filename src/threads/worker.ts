@@ -3,9 +3,6 @@ import * as zmq from "zeromq";
 import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
-const lists = {};
-lists[`${process.env.ID}-testlist`] = { banana: 1 };
-lists[`${process.env.ID}-testlist2`] = { apples: 3 };
 let hr: HashRing | null = null;
 const shoppingLists: {[key: string]: PNShoppingMap} = {};
 
@@ -45,6 +42,31 @@ export default async function workerProcess() {
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
 }
 
+async function syncList(list: string) {
+  const workers = JSON.parse(process.env.WORKERIDS);
+  const owners = hr.range(list, 3);
+
+  for (const owner of owners) {
+    if (owner === process.env.ID) continue;
+    const requester = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+    requester.connect(`tcp://127.0.0.1:${workers[owner]}`);
+
+    const request = {
+      type: "sync",
+      id: list,
+      list: shoppingLists[list].toJSON()
+    };
+  
+    await requester.send(JSON.stringify(request));
+  
+    const msg = JSON.parse(((await requester.receive()).toString()));
+    requester.disconnect(`tcp://127.0.0.1:${workers[owner]}`);
+    if (msg.list) {
+      shoppingLists[list].join(PNShoppingMap.fromJSON(msg.list));
+    }
+  }
+}
+
 async function syncLists() {
   const workers = JSON.parse(process.env.WORKERIDS);
   for (const worker in workers) {
@@ -61,7 +83,8 @@ async function syncLists() {
 
     const reply = JSON.parse(((await requester.receive()).toString()));;
     for (const list in reply) {
-      shoppingLists[list] = PNShoppingMap.fromJSON(reply[list], null, list);
+      if (!(list in shoppingLists)) shoppingLists[list] = PNShoppingMap.fromJSON(reply[list], null, list);
+      else shoppingLists[list].join(PNShoppingMap.fromJSON(reply[list], null , list));
     }
   }
 }
@@ -76,7 +99,13 @@ async function cacheMiss(port: number, listID: string) {
   };
 
   await requester.send(JSON.stringify(request));
+
   const msg = JSON.parse(((await requester.receive()).toString()));
+  if (msg.list) {
+    shoppingLists[listID] = PNShoppingMap.fromJSON(msg.list);
+    return true;
+  }
+  return false;
 }
 
 async function processRequests(sock: zmq.Request) {
@@ -85,13 +114,14 @@ async function processRequests(sock: zmq.Request) {
     
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);
-    console.log(process.env.ID);
+    console.log(process.env.ID, contents.id);
 
     try {
       switch (contents.type) {
         case "kill":
           for (const list in shoppingLists) {
             const responsible = hr.get(list);
+            await syncList(list);
             const sender = new zmq.Request();
             console.log(
               `tcp://127.0.0.1:${contents.workerIds[responsible]}`
@@ -102,7 +132,7 @@ async function processRequests(sock: zmq.Request) {
 
             while (true) {
               const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
-              sender.send(JSON.stringify(msg));
+              await sender.send(JSON.stringify(msg));
 
               const [rep] = await sender.receive();
               const repObj = JSON.parse(rep.toString());
@@ -111,45 +141,57 @@ async function processRequests(sock: zmq.Request) {
           }
           
           const confirmation = {type: "i am dead"}
-          sock.send([msg[0], "", JSON.stringify(confirmation)]);
-          break;
-        case "upload":
-          const newList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-          shoppingLists[contents.id] = newList;
-          const uploadReply = {
-            type: "upload",
-            message: `List ${contents.id} has been uploaded.`
-          };
-          sock.send([msg[0], "", JSON.stringify(uploadReply)]);
+          await sock.send([msg[0], "", JSON.stringify(confirmation)]);
           break;
         case "update":
           const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-          shoppingLists[contents.id].join(receivedList);
+          if (!(contents.id in shoppingLists)) {
+            shoppingLists[contents.id] = receivedList;
+          }
+          else {
+            shoppingLists[contents.id].join(receivedList);
+          }
+          await syncList(contents.id);
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`
           };
-          sock.send([msg[0], "", JSON.stringify(updateReply)]);
+          await sock.send([msg[0], "", JSON.stringify(updateReply)]);
           break;
         case "fetch":
-          const list = shoppingLists[contents.id];
+          let list = shoppingLists[contents.id];
+          if (!list) {
+            const workers = JSON.parse(process.env.WORKERIDS);
+
+            for (const owner of hr.range(contents.id, 3)) {
+              if (owner === process.env.ID) continue;
+
+              if (await cacheMiss(workers[owner], contents.id) === true) {
+                list = shoppingLists[contents.id];
+                break;
+              } 
+            }
+          }
+
+          if (!list) throw new Error("List could not be fetched.");
+
           const fetchReply = {
             type: "fetch",
             message: "List has been fetched.",
             list: list.toJSON()
           };
-          sock.send([msg[0], "", JSON.stringify(fetchReply)]);
+          await sock.send([msg[0], "", JSON.stringify(fetchReply)]);
           break;
         default:
           const reply = {
             type: contents.type,
             message: `${contents.type} to you too`,
           };
-          sock.send([msg[0], "", JSON.stringify(reply)]);
+          await sock.send([msg[0], "", JSON.stringify(reply)]);
           break;
       }
     } catch (e) {
-      sock.send([msg[0], "", JSON.stringify({type: "error", message: "Error in operation."})]);
+      await sock.send([msg[0], "", JSON.stringify({type: "error", message: "Error in operation."})]);
     }
   }
 }
@@ -158,18 +200,25 @@ async function workerComms(listReceiver: zmq.Reply) {
   for await (const recieved of listReceiver) {
     try {
         const msg = JSON.parse(recieved.toString());
-        console.log(msg);
+        //console.log(msg);
 
         switch (msg.type) {
           case "killed":
-            lists[msg.id] = msg.list;
             shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
 
             await listReceiver.send(JSON.stringify({type: "ACK"}));
             break;
           case "give":
-            const reply = {list: shoppingLists[msg.id].toJSON()};
+            const reply = {list: shoppingLists[msg.id]?.toJSON()};
             await listReceiver.send(JSON.stringify(reply));
+            break;
+          case "sync":
+            if (!(msg.id in shoppingLists)) {
+              shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
+            }
+            shoppingLists[msg.id].join(PNShoppingMap.fromJSON(msg.list, null, msg.id));
+            const syncReply = {list: shoppingLists[msg.id].toJSON()};
+            await listReceiver.send(JSON.stringify(syncReply));
             break;
           case "transfer":
             const toTransfer = {};
@@ -178,8 +227,8 @@ async function workerComms(listReceiver: zmq.Reply) {
             const localHr = buildHashRing(JSON.parse(process.env.WORKERIDS));
             localHr.add(newNode);
             for (const list in shoppingLists) {
-              const owner = localHr.get(list);
-              if (owner === msg.id) {
+              const owners = localHr.range(list, 3);
+              if (owners.includes(msg.id)) {
                 toTransfer[list] = shoppingLists[list];
                 delete shoppingLists[list];
               }
@@ -189,7 +238,7 @@ async function workerComms(listReceiver: zmq.Reply) {
         }
     } catch (e) {
         console.error(e);
-        listReceiver.send(JSON.stringify({type: "NACK"}));
+        await listReceiver.send(JSON.stringify({type: "NACK"}));
     }
   }
 }

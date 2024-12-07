@@ -7,7 +7,7 @@ async function clientProcess() {
     sock.connect(frontAddr);
     const createMsg = {
         type: "kill",
-        id: "e0ee7dee-e334-4216-a915-fd8fe2104e5a"
+        id: "ad7d4c2f-815e-4f2a-8d7c-c181b3059f5a"
     };
 
     await sock.send(JSON.stringify(createMsg));
