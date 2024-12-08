@@ -1,17 +1,12 @@
 {
     "commands":[
+        "login test",
         "create hello",
         "add 1 grape",
         "add 3 potato",
         "rem potato",
-        "add 1 banana",
-        "push",
         "view",
-        "pull",
-        "add 2 banana",
-        "rem grape",
         "push",
-        "view",
         "close"
     ]
 }

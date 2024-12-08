@@ -3,7 +3,7 @@ import { PNShoppingMap } from "./crdt/PNShoppingMap.js";
 import * as fs from 'fs';
 import * as zmq from "zeromq";
 import cluster from "node:cluster";
-import { version } from "os";
+import * as taskManager from "./clientTaskManager.js";
 
 enum ConsoleState{
     LOGIN, 
@@ -11,17 +11,10 @@ enum ConsoleState{
     SHOPPING_LIST
 }
 
-interface item {
-    name: string;
-    quantity: number;
-}
-
 interface state{
-    consoleState : ConsoleState;
     shoppingListId : string;
     crdt : PNShoppingMap | null;
     sock : zmq.Request | null;
-    persist: boolean
 }
 
 const userStates : Map<string, state> = new Map();
@@ -29,6 +22,14 @@ const userStates : Map<string, state> = new Map();
 const frontAddr = "tcp://127.0.0.1:12346";
 
 const lists : Map<string, string> = new Map();
+
+let persist = true;
+
+let consoleState : ConsoleState = ConsoleState.LOGIN;
+
+const clients = 10;
+let automatedTesting = true;
+
 
 
 const readJsonFile = (filePath: string): any => {
@@ -58,10 +59,14 @@ function readFromLocalStorage(userName : string | null){
                 }
             }
             console.log(crdt.toJSON());
-            const state : state = {consoleState: ConsoleState.START, shoppingListId: shoppingListId, crdt: crdt, sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: false}; 
+            const state : state = {shoppingListId: shoppingListId, crdt: crdt, sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}; 
             state.sock.connect(frontAddr);
             userStates.set(shoppingListId, state);
         }
+        if(automatedTesting) taskManager.pushAnswer("Login was successfull, loaded data from localStorage");
+    }
+    else if(automatedTesting){
+        taskManager.pushAnswer("Login was successfull, started a new user");
     }
 }
 
@@ -73,7 +78,8 @@ function generateGUId() : string {
 
 
 
-async function handleInput(rl : readline.Interface, state : state){
+async function handleInput(state : state){
+
 
     function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
         return new Promise((resolve) => {
@@ -101,7 +107,7 @@ async function handleInput(rl : readline.Interface, state : state){
 
     async function fetchShoppingList(id : string, name : string, userName : string, state : state){
         if(!userStates.has(name)){
-            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: true}
+            const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
             newState.sock.connect(frontAddr);
             lists.set(name, id);
             userStates.set(id, newState);
@@ -112,7 +118,6 @@ async function handleInput(rl : readline.Interface, state : state){
         else{
             console.log("The list with that name already exists. I'm sorry\n");
         }
-
         return state;
 
 
@@ -121,7 +126,7 @@ async function handleInput(rl : readline.Interface, state : state){
     function pickShoppingList(name : string, state : state){
         if(lists.has(name)){
             state = userStates.get(lists.get(name));
-            state.consoleState = ConsoleState.SHOPPING_LIST;
+            consoleState = ConsoleState.SHOPPING_LIST;
         }
         else{
             console.log("The list with name " + name + " does not exist\n")
@@ -132,7 +137,7 @@ async function handleInput(rl : readline.Interface, state : state){
     function createShoppingList(name : string, userName : string, state : state){
         if(!userStates.has(name)){
             const id = generateGUId();
-            const newState : state = {consoleState: ConsoleState.SHOPPING_LIST, shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000}), persist: true}
+            const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
             newState.sock.connect(frontAddr);
             lists.set(name, id);
             userStates.set(id, newState);
@@ -261,33 +266,44 @@ async function handleInput(rl : readline.Interface, state : state){
        -"close" to exit the program;\n\n`;
 
 
-    let persist = true;
     let persistingDataInterval = null;
 
     let text : string = login_text;
     let userName : string = null;
+    let rl : readline.Interface = null;
+
     
     const commands : Array<string> = []//readJsonFile('./test').commands;
+    if(automatedTesting) taskManager.manageLogin(commands, process.env.USERNAME);
     while(true){
         let answer : string = "";
         if(commands.length > 0) {
             answer = commands[0]
             commands.shift()
         }
-        else answer = await createQuestion(rl, text);
+        else {
+            if(rl == null){
+                rl = readline.createInterface({
+                    input: process.stdin,
+                    output: process.stdout
+                });
+            }
+            answer = await createQuestion(rl, text);
+        }
         text = "";
         const answerArray : Array<string> = answer.split(" ");
         const answerArrayLength = answerArray.length;
         if(answerArrayLength > 0){
             const command : string = answerArray[0].toLowerCase();
-            switch(state.consoleState){
+            switch(consoleState){
                 case ConsoleState.LOGIN:{
                     if(command == "login" && answerArrayLength == 2){
                         userName = answerArray[1];
                         readFromLocalStorage(userName);
                         persistingDataInterval = persistLocalStorage(userName);
                         text = initial_text;
-                        state.consoleState = ConsoleState.START;
+                        consoleState = ConsoleState.START;
+                        
                     }
                     break;
                 }
@@ -306,7 +322,6 @@ async function handleInput(rl : readline.Interface, state : state){
                         if(allItems.has(itemName)){
                             state.crdt.remove(itemName, state.crdt.calcTotal(itemName));
                         }
-                        
                     }
                     else if(command == "rem" && answerArrayLength == 3){
                         const itemQuantity : number = Number(answerArray[1])
@@ -321,6 +336,7 @@ async function handleInput(rl : readline.Interface, state : state){
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
+                        break;
                     }
                 }
                 case ConsoleState.START:{
@@ -346,8 +362,7 @@ async function handleInput(rl : readline.Interface, state : state){
                         text = initial_text;
                     }
                     else if(command == "help" && answerArrayLength == 1){
-                        if(state.consoleState == ConsoleState.START) text = help_text1;
-                        else if(state.consoleState == ConsoleState.SHOPPING_LIST) text = help_text2;
+                        text = help_text1;
                     }
                     break;
                 }
@@ -363,7 +378,7 @@ async function handleInput(rl : readline.Interface, state : state){
 
     }
     
-    rl.close();
+    if(rl != null) rl.close();
     if(persistingDataInterval != null){
         setTimeout(() => {
             clearInterval(persistingDataInterval);
@@ -376,24 +391,43 @@ async function handleInput(rl : readline.Interface, state : state){
         }
     }
 
-    
+}
 
+
+
+
+if(cluster.isPrimary && automatedTesting){
+    for(let client = 0; client < clients; client++){
+        cluster.fork({
+            USERNAME: "Client"+client,
+        });
+    }
+
+    var deadClients = 0;
+    cluster.on("disconnect", function (worker) {
+      deadClients++;
+      console.log(deadClients)
+      if (deadClients === clients){
+        console.log("finished");
+        process.exit(0);
+      }
+    });
+}
+else{
+    let state : state = {shoppingListId: "", crdt: null, sock: null}; 
+
+    handleInput(state);
+    if(automatedTesting) {
+        taskManager.writeLog();
+        process.disconnect();
+    }
 }
 
 
 
 
 
-const rl : readline.Interface = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
 
-
-
-let state : state = {consoleState: ConsoleState.LOGIN, shoppingListId: "", crdt: null, sock: null, persist: false}; 
-
-handleInput(rl, state);
 
 
 
