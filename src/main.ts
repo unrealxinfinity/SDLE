@@ -23,7 +23,7 @@ const frontAddr = "tcp://127.0.0.1:12346";
 
 const lists : Map<string, string> = new Map();
 
-let persist = true;
+let persist = false;
 
 let consoleState : ConsoleState = ConsoleState.LOGIN;
 
@@ -109,15 +109,21 @@ async function handleInput(state : state){
         if(!userStates.has(name)){
             const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
             newState.sock.connect(frontAddr);
-            lists.set(name, id);
-            userStates.set(id, newState);
-            await pull(userName, newState);
-            state = pickShoppingList(name, state);
-            console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
+            const success = await pull(userName, newState);
+            if(success){
+                lists.set(name, id);
+                userStates.set(id, newState);
+                state = pickShoppingList(name, state);
+                console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
+                if(automatedTesting) {
+                    taskManager.pushAnswer("Successfully fetched shopping list " + id);
+                    console.log("hello");
+                }
+                return state;
+            }
         }
-        else{
-            console.log("The list with that name already exists. I'm sorry\n");
-        }
+        console.log("The list with that name already exists. I'm sorry\n");
+        if(automatedTesting) taskManager.pushAnswer("Unsuccessfully fetched shopping list " + id);
         return state;
 
 
@@ -134,18 +140,21 @@ async function handleInput(state : state){
         return state;
     }
 
-    function createShoppingList(name : string, userName : string, state : state){
+    async function createShoppingList(name : string, userName : string, state : state){
         if(!userStates.has(name)){
-            const id = generateGUId();
+            let id = generateGUId();
+            if(automatedTesting)id = await taskManager.getListID();
             const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
             newState.sock.connect(frontAddr);
             lists.set(name, id);
             userStates.set(id, newState);
             state = pickShoppingList(name, state);
             console.log("Successfully created shopping list " + name + " with id = " + id + '\n');
+            if(automatedTesting) taskManager.pushAnswer("Successfully created shopping list " + id);
         }
         else{
             console.log("The list with that name already exists. I'm sorry\n");
+            if(automatedTesting) taskManager.pushAnswer("Unsuccessfully created shopping list");
         }
 
         return state;
@@ -160,7 +169,6 @@ async function handleInput(state : state){
             id: state.shoppingListId.toString()
         };
 
-        console.log(fetchMsg);
     
         const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
     
@@ -186,9 +194,9 @@ async function handleInput(state : state){
                 }
             }
             state.crdt.join(incoming_crdt);
+            return true;
         }
-        else if(fetchReply.type == "error"){
-        }
+        return false;
     }
 
     async function push(state : state){
@@ -274,7 +282,7 @@ async function handleInput(state : state){
 
     
     const commands : Array<string> = []//readJsonFile('./test').commands;
-    if(automatedTesting) taskManager.manageLogin(commands, process.env.USERNAME);
+    if(automatedTesting) await taskManager.manageLogin(commands, process.env.USERNAME);
     while(true){
         let answer : string = "";
         if(commands.length > 0) {
@@ -303,7 +311,9 @@ async function handleInput(state : state){
                         persistingDataInterval = persistLocalStorage(userName);
                         text = initial_text;
                         consoleState = ConsoleState.START;
-                        
+                        if(automatedTesting){
+                            await taskManager.manageListCreation(commands);
+                        }               
                     }
                     break;
                 }
@@ -352,7 +362,7 @@ async function handleInput(state : state){
                     }
                     else if(command == "create" && answerArrayLength == 2){
                         const name : string = answerArray[1];
-                        state = createShoppingList(name, userName, state);
+                        state = await createShoppingList(name, userName, state);
                         text = initial_text;
                     }
                     else if(command == "pick" && answerArrayLength == 2){
@@ -397,17 +407,17 @@ async function handleInput(state : state){
 
 
 if(cluster.isPrimary && automatedTesting){
-    for(let client = 0; client < clients; client++){
+    for(let client = 1; client <= clients; client++){
         cluster.fork({
             USERNAME: "Client"+client,
         });
     }
 
-    var deadClients = 0;
+    var exitedClients = 0;
     cluster.on("disconnect", function (worker) {
-      deadClients++;
-      console.log(deadClients)
-      if (deadClients === clients){
+      exitedClients++;
+      console.log(exitedClients)
+      if (exitedClients === clients){
         console.log("finished");
         process.exit(0);
       }
@@ -416,7 +426,7 @@ if(cluster.isPrimary && automatedTesting){
 else{
     let state : state = {shoppingListId: "", crdt: null, sock: null}; 
 
-    handleInput(state);
+    await handleInput(state);
     if(automatedTesting) {
         taskManager.writeLog();
         process.disconnect();
