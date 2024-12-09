@@ -174,7 +174,6 @@ async function handleInput(state : state){
     
         const fetchReply = JSON.parse((await state.sock.receive()).toString());
         console.log(fetchReply.message);
-        console.log(fetchReply);
         if(fetchReply.type == "fetch"){
             const inc = JSON.parse(fetchReply.list.toString()).inc;
             const dec = JSON.parse(fetchReply.list.toString()).dec;
@@ -194,8 +193,10 @@ async function handleInput(state : state){
                 }
             }
             state.crdt.join(incoming_crdt);
+            if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
             return true;
         }
+        if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled");
         return false;
     }
 
@@ -211,6 +212,7 @@ async function handleInput(state : state){
         const updateReply = JSON.parse((await state.sock.receive()).toString());
 
         console.log(updateReply.message);
+        if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pushed!\n");
     }
 
     function persistLocalStorage(userName : string){
@@ -284,7 +286,7 @@ async function handleInput(state : state){
     const commands : Array<string> = []//readJsonFile('./test').commands;
     if(automatedTesting) await taskManager.manageLogin(commands, process.env.USERNAME, clients);
     while(true){
-        if(consoleState == ConsoleState.SHOPPING_LIST && commands.length == 0) await taskManager.manageAddOrRemove(commands, state.crdt);
+        if(consoleState == ConsoleState.SHOPPING_LIST && commands.length == 0) await taskManager.manageRandomAction(commands, state.crdt);
         let answer : string = "";
         if(commands.length > 0) {
             answer = commands[0]
@@ -329,7 +331,9 @@ async function handleInput(state : state){
                             itemName += " " + answerArray[index];
                         }
                         state.crdt.add(itemName, itemQuantity);
-                        if(automatedTesting) taskManager.pushAnswer("Successfully added " + itemQuantity + "x " + itemName + " to the shopping cart!");
+                        if(automatedTesting) {
+                            taskManager.pushCartContents(state.crdt, "");
+                        }
                     }
                     else if(command == "rem" && answerArrayLength == 2){
                         let itemName : string = answerArray[1];
@@ -337,7 +341,6 @@ async function handleInput(state : state){
                         if(allItems.has(itemName)){
                             const quantity = state.crdt.calcTotal(itemName);
                             state.crdt.remove(itemName, quantity);
-                            if(automatedTesting) taskManager.pushAnswer("Successfully removed " + quantity + "x " + itemName + " from the shopping cart!");
                         }
                     }
                     else if(command == "rem" && answerArrayLength >= 3){
@@ -347,7 +350,9 @@ async function handleInput(state : state){
                             itemName += " " + answerArray[index];
                         }
                         state.crdt.remove(itemName, itemQuantity);
-                        if(automatedTesting) taskManager.pushAnswer("Successfully removed " + itemQuantity + "x " + itemName + " from the shopping cart!");
+                        if(automatedTesting) {
+                            taskManager.pushCartContents(state.crdt, "");
+                        }
                     }
                     else if(command == "push" && answerArrayLength == 1){
                         await push(state)
