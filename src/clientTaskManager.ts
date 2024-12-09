@@ -13,9 +13,10 @@ let currentRecipe : PNShoppingMap = null;
 
 let user = null;
 
-const addRemoveProb = Math.random();
-const pushProb = Math.random();
-const pullProb = Math.random();
+let addRemoveProb = Math.random();
+let pushProb = Math.random();
+let pullProb = Math.random();
+let changeListProb = Math.random();
 
 
 function sleep(ms : number) : Promise<void>{
@@ -85,7 +86,7 @@ export async function manageListCreation(commands : Array<string>, lists : Map<s
 
 
 
-export async function manageRandomAction(commands : Array<string>, crdt : PNShoppingMap){
+export async function manageRandomAction(commands : Array<string>, crdt : PNShoppingMap, lists : Map<string, string>){
     async function manageAddOrRemove(commands : Array<string>, crdt : PNShoppingMap){
         function getAllItemQuantities(crdt : PNShoppingMap){
             const allItems : Set<string> = crdt.getAllItems();
@@ -156,18 +157,44 @@ export async function manageRandomAction(commands : Array<string>, crdt : PNShop
     
     }
 
+
+    async function manageChangeList(commands : Array<string>, lists : Map<string, string>){
+        const randomListID = listIDs[Math.floor(Math.random()*listIDs.length)];
+        if(lists.has(randomListID)){
+            await pushAction(commands, "pick " + randomListID, "Picked list " + randomListID);
+        }
+        else{
+            await pushAction(commands, "fetch " + randomListID + " " + randomListID, "Fetched list " + randomListID);
+        }
+        addRemoveProb = Math.random();
+        pushProb = 0
+        changeListProb = addRemoveProb/10;
+        pullProb = (addRemoveProb + pushProb + changeListProb)*3
+        getRandomRecipe();
+    }
+
     const randomProb = Math.random();
 
     const randomProbScaled = (addRemoveProb + pushProb + pullProb)*randomProb;
 
     if(randomProbScaled <= addRemoveProb){
+        pushProb += Math.random();
+        pullProb += Math.random();
         await manageAddOrRemove(commands, crdt);
     }
     else if(randomProbScaled <= (addRemoveProb+pushProb)){
+        pushProb = 0;
+        changeListProb = Math.random();
         await pushAction(commands, "push", "Pushed list");
     }
     else if(randomProbScaled <= (addRemoveProb+pushProb+pullProb)){
+        pullProb = 0;
+        pushProb = 0;
+        changeListProb = Math.random();
         await pushAction(commands, "pull", "Pulled List");
+    }
+    else if(randomProbScaled <= (addRemoveProb+pushProb+pullProb+changeListProb)){
+        await manageChangeList(commands, lists);
     }
 }
 

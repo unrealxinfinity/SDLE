@@ -286,7 +286,7 @@ async function handleInput(state : state){
     const commands : Array<string> = []//readJsonFile('./test').commands;
     if(automatedTesting) await taskManager.manageLogin(commands, process.env.USERNAME, clients);
     while(true){
-        if(consoleState == ConsoleState.SHOPPING_LIST && commands.length == 0) await taskManager.manageRandomAction(commands, state.crdt);
+        if(consoleState == ConsoleState.SHOPPING_LIST && commands.length == 0) await taskManager.manageRandomAction(commands, state.crdt, lists);
         let answer : string = "";
         if(commands.length > 0) {
             answer = commands[0]
