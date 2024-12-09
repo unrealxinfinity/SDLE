@@ -32,7 +32,7 @@ class PNShoppingMap{
         if(this.inc.get(this.clientId).has(item)){
             const [notBought,bought] = this.inc.get(this.clientId).get(item);
             this.inc.get(this.clientId).set(item,[notBought+quantity,bought]);
-            if(this.printAnswers)console.log(item + " was updated from the cart!");
+            if(this.printAnswers)console.log("+" + quantity + " " + item + " was updated from the cart!");
         }else{
             this.inc.get(this.clientId).set(item,[quantity,0]);
             if(this.printAnswers)console.log(quantity + "x " + item + " was added to the cart!")
@@ -57,7 +57,7 @@ class PNShoppingMap{
             }
             const [notBought,bought] = this.dec.get(this.clientId).get(item);
             this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
-            if(this.printAnswers)console.log(item + " was updated from the cart!");
+            if(this.printAnswers)console.log("-" + quantity + " " + item + " was updated from the cart!");
         }else{
             this.dec.get(this.clientId).set(item,[quantity,0]);
             if(this.printAnswers)console.log(item + " was removed from the cart!");

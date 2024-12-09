@@ -140,10 +140,10 @@ async function handleInput(state : state){
         return state;
     }
 
-    async function createShoppingList(name : string, userName : string, state : state){
+    function createShoppingList(name : string, userName : string, state : state){
         if(!userStates.has(name)){
             let id = generateGUId();
-            if(automatedTesting)id = await taskManager.getListID();
+            if(automatedTesting)id = id = userName.slice(6);
             const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(userName, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
             newState.sock.connect(frontAddr);
             lists.set(name, id);
@@ -282,8 +282,9 @@ async function handleInput(state : state){
 
     
     const commands : Array<string> = []//readJsonFile('./test').commands;
-    if(automatedTesting) await taskManager.manageLogin(commands, process.env.USERNAME);
+    if(automatedTesting) await taskManager.manageLogin(commands, process.env.USERNAME, clients);
     while(true){
+        if(consoleState == ConsoleState.SHOPPING_LIST && commands.length == 0) await taskManager.manageAddOrRemove(commands, state.crdt);
         let answer : string = "";
         if(commands.length > 0) {
             answer = commands[0]
@@ -312,7 +313,7 @@ async function handleInput(state : state){
                         text = initial_text;
                         consoleState = ConsoleState.START;
                         if(automatedTesting){
-                            await taskManager.manageListCreation(commands);
+                            await taskManager.manageListCreation(commands, lists);
                         }               
                     }
                     break;
@@ -321,22 +322,32 @@ async function handleInput(state : state){
                     if(command == "view" && answerArrayLength == 1){
                         viewShoppingList(state);
                     }
-                    else if(command == "add" && answerArrayLength == 3){
+                    else if(command == "add" && answerArrayLength >= 3){
                         const itemQuantity : number = Number(answerArray[1])
-                        const itemName : string = answerArray[2];
+                        let itemName : string = answerArray[2];
+                        for(let index = 3; index < answerArrayLength; index++){
+                            itemName += " " + answerArray[index];
+                        }
                         state.crdt.add(itemName, itemQuantity);
+                        if(automatedTesting) taskManager.pushAnswer("Successfully added " + itemQuantity + "x " + itemName + " to the shopping cart!");
                     }
                     else if(command == "rem" && answerArrayLength == 2){
-                        const itemName : string = answerArray[1];
+                        let itemName : string = answerArray[1];
                         const allItems = state.crdt.getAllItems();
                         if(allItems.has(itemName)){
-                            state.crdt.remove(itemName, state.crdt.calcTotal(itemName));
+                            const quantity = state.crdt.calcTotal(itemName);
+                            state.crdt.remove(itemName, quantity);
+                            if(automatedTesting) taskManager.pushAnswer("Successfully removed " + quantity + "x " + itemName + " from the shopping cart!");
                         }
                     }
-                    else if(command == "rem" && answerArrayLength == 3){
+                    else if(command == "rem" && answerArrayLength >= 3){
                         const itemQuantity : number = Number(answerArray[1])
-                        const itemName : string = answerArray[2];
+                        let itemName : string = answerArray[2];
+                        for(let index = 3; index < answerArrayLength; index++){
+                            itemName += " " + answerArray[index];
+                        }
                         state.crdt.remove(itemName, itemQuantity);
+                        if(automatedTesting) taskManager.pushAnswer("Successfully removed " + itemQuantity + "x " + itemName + " from the shopping cart!");
                     }
                     else if(command == "push" && answerArrayLength == 1){
                         await push(state)
@@ -362,7 +373,7 @@ async function handleInput(state : state){
                     }
                     else if(command == "create" && answerArrayLength == 2){
                         const name : string = answerArray[1];
-                        state = await createShoppingList(name, userName, state);
+                        state = createShoppingList(name, userName, state);
                         text = initial_text;
                     }
                     else if(command == "pick" && answerArrayLength == 2){
@@ -382,6 +393,7 @@ async function handleInput(state : state){
 
             }
             if(command == "close" && answerArrayLength == 1){
+                if(automatedTesting) taskManager.pushAnswer("Successfully closed the System");
                 break;
             }
         }
