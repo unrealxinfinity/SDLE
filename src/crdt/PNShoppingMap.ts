@@ -63,7 +63,7 @@ class PNShoppingMap{
                 return;
             }
             else if (this.calcTotal(item)-quantity===0){
-                this.productKeySet.remove(item);
+                this.removeProduct(item);
             }
             const [notBought,bought] = this.dec.get(this.clientId).get(item);
             this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
@@ -259,7 +259,7 @@ class PNShoppingMap{
         })
         // Remove the keys if there people bought too much of its kind
         toRemove.forEach((removeItem)=>{
-            this.keySet.remove(removeItem);
+            this.removeProduct(removeItem);
         });
     }
 
@@ -299,7 +299,23 @@ class PNShoppingMap{
             console.log("Item doesn't exist in the list or previously deleted")
         }
     }
-    
+    /**
+     * Removes a product from the counters and the key set (same as deleting a key in the list);
+     * @param key 
+     */
+    removeProduct(key:string){
+        this.productKeySet.remove(key);
+        for (let shoppingList of this.inc.values()){
+            if(shoppingList.get(key)!== undefined){
+                shoppingList.delete(key);
+            }
+        }
+        for (let shoppingList of this.dec.values()){
+            if(shoppingList.get(key)!== undefined){
+                shoppingList.delete(key);
+            }
+        }
+    }
     getClientId(){
         return this.clientId;
     }
