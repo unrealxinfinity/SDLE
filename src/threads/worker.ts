@@ -8,6 +8,7 @@ lists[`${process.env.ID}-testlist`] = { banana: 1 };
 lists[`${process.env.ID}-testlist2`] = { apples: 3 };
 let hr: HashRing | null = null;
 const shoppingLists: {[key: string]: PNShoppingMap} = {};
+const toSync = [];
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -42,6 +43,16 @@ export default async function workerProcess() {
   };
   await sock.send(JSON.stringify(readyMsg));
 
+  setInterval(() => {
+    if (toSync.length !== 0) {
+      const list = toSync.shift();
+      try {
+        syncList(list);
+      } catch (e) {
+        console.log("error syncing");
+      }
+    }
+  }, 500);
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
 }
 
@@ -154,7 +165,7 @@ async function processRequests(sock: zmq.Request) {
           else {
             shoppingLists[contents.id].join(receivedList);
           }
-          await syncList(contents.id);
+          if (!toSync.includes(contents.id)) toSync.push(contents.id);
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`
