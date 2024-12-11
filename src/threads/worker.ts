@@ -23,7 +23,7 @@ function buildHashRing(ids: any): HashRing {
 }
 
 export default async function workerProcess() {
-  const sock = new zmq.Request();
+  const sock = new zmq.Dealer();
   const listReceiver = new zmq.Reply();
   sock.routingId = process.env.ID;
   sock.connect(backAddr);
@@ -108,9 +108,17 @@ async function cacheMiss(port: number, listID: string) {
   return false;
 }
 
-async function processRequests(sock: zmq.Request) {
+async function processRequests(sock: zmq.Dealer) {
+  let interval = setInterval(() => {
+    const readyMsg = {
+      type: "ready",
+    };
+    sock.send(JSON.stringify(readyMsg));
+  }, 5000);
+
   for await (const msg of sock) {
-    const contents = JSON.parse(msg[2].toString());
+    clearInterval(interval);
+    const contents = JSON.parse(msg[3].toString());
     
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);
@@ -141,7 +149,7 @@ async function processRequests(sock: zmq.Request) {
           }
           
           const confirmation = {type: "i am dead"}
-          await sock.send([msg[0], "", JSON.stringify(confirmation)]);
+          await sock.send([msg[1], "", JSON.stringify(confirmation)]);
           break;
         case "update":
           const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
@@ -156,7 +164,7 @@ async function processRequests(sock: zmq.Request) {
             type: "update",
             message: `List ${contents.id} has been updated.`
           };
-          await sock.send([msg[0], "", JSON.stringify(updateReply)]);
+          await sock.send([msg[1], "", JSON.stringify(updateReply)]);
           break;
         case "fetch":
           let list = shoppingLists[contents.id];
@@ -180,19 +188,26 @@ async function processRequests(sock: zmq.Request) {
             message: "List has been fetched.",
             list: list.toJSON()
           };
-          await sock.send([msg[0], "", JSON.stringify(fetchReply)]);
+          await sock.send([msg[1], "", JSON.stringify(fetchReply)]);
           break;
         default:
           const reply = {
             type: contents.type,
             message: `${contents.type} to you too`,
           };
-          await sock.send([msg[0], "", JSON.stringify(reply)]);
+          await sock.send([msg[1], "", JSON.stringify(reply)]);
           break;
       }
     } catch (e) {
-      await sock.send([msg[0], "", JSON.stringify({type: "error", message: "Error in operation."})]);
+      await sock.send([msg[1], "", JSON.stringify({type: "error", message: "Error in operation."})]);
     }
+
+    interval = setInterval(() => {
+      const readyMsg = {
+        type: "ready",
+      };
+      sock.send(JSON.stringify(readyMsg));
+    }, 5000);
   }
 }
 
