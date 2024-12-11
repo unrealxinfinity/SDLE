@@ -9,6 +9,7 @@ list2.join(list1);
 list1.remove("banana");
 list2.remove("banana");
 list1.join(list2);
+list2.buy("apple");
 console.log(list1.toJSON())
 
 let test:any = PNShoppingMap.fromJSON(list1.toJSON())

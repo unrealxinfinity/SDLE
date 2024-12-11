@@ -76,7 +76,7 @@ class PNShoppingMap{
     /**
      * Sets the number of bought items;
      */
-    buy(item:string,quantity:number){
+    buy(item:string,quantity:number=1){
         let shoppingList = this.inc.get(this.clientId);
         if(shoppingList.has(item)){
             const [notBought,bought] = shoppingList.get(item);
@@ -90,7 +90,7 @@ class PNShoppingMap{
     /**
      * Refunds the number of items;
      */
-    refund(item:string,quantity:number){
+    refund(item:string,quantity:number=1){
         let shoppingList = this.dec.get(this.clientId);
         let shoppingListInc = this.inc.get(this.clientId);
         if(shoppingListInc.has(item) && shoppingList.has(item)){
