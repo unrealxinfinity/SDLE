@@ -1,9 +1,15 @@
+import OptOrSet from "./OptOrSet.js";
+/**
+ * PN counter tweaked to accept product key tracking using Optimized Observed Remove Set
+ */
 class PNShoppingMap{
     private inc: Map<string,Map<string,[number,number]>>
     private dec: Map<string,Map<string,[number,number]>>
     private id : string;
     private clientId : string;
     private printAnswers : boolean;
+    private productKeySet:OptOrSet;
+    
     constructor(clientId: string="",shoppingListId: string="", printAnswers : boolean= true){  
         this.printAnswers = printAnswers;
         this.inc = new Map();
@@ -13,6 +19,7 @@ class PNShoppingMap{
         if(clientId){
             this.inc.set(this.clientId,new Map());
             this.dec.set(this.clientId,new Map());
+            this.productKeySet = new OptOrSet(this.clientId,this.id);
         }
         else{
             //console.warn("No clientID provided");
@@ -28,19 +35,19 @@ class PNShoppingMap{
             console.log("Quantity must be positive");
             return;
         }
-        
         if(this.inc.get(this.clientId).has(item)){
             const [notBought,bought] = this.inc.get(this.clientId).get(item);
             this.inc.get(this.clientId).set(item,[notBought+quantity,bought]);
             if(this.printAnswers)console.log("+" + quantity + " " + item + " was updated from the cart!");
         }else{
+            this.productKeySet.add(item);
             this.inc.get(this.clientId).set(item,[quantity,0]);
             if(this.printAnswers)console.log(quantity + "x " + item + " was added to the cart!")
         }
 
     }
     /**
-     * Removes an item by certain quantity for the shopping list belonging to this clientID
+     * Removes an item by certain quantity for the shopping list belonging to this clientID, this is viewed the same as buying the item from the list.
      * @param item 
      * @param quantity 
      */
@@ -55,6 +62,9 @@ class PNShoppingMap{
                 console.log("Can't remove more than what shopping list has for client:" + this.clientId + "in cart: "+this.id);
                 return;
             }
+            else if (this.calcTotal(item)-quantity===0){
+                this.productKeySet.remove(item);
+            }
             const [notBought,bought] = this.dec.get(this.clientId).get(item);
             this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
             if(this.printAnswers)console.log("-" + quantity + " " + item + " was updated from the cart!");
@@ -64,24 +74,41 @@ class PNShoppingMap{
         }
     }
     /**
-     * Sets the items that are not bought into bought items
+     * Sets the number of bought items;
      */
-    setBought(item:string){
-        for (let shoppingList of this.inc.values()){
-            if(shoppingList.has(item)){
-                const [notBought,bought] = shoppingList.get(item);
-                shoppingList.set(item,[notBought,bought+notBought]);
-            }
-            else{
-                throw new Error("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
-            }
+    buy(item:string,quantity:number){
+        let shoppingList = this.inc.get(this.clientId);
+        if(shoppingList.has(item)){
+            const [notBought,bought] = shoppingList.get(item);
+            shoppingList.set(item,[notBought,bought+ quantity]);
+        }
+        else{
+            throw new Error("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
+        }
+        
+    }
+    /**
+     * Refunds the number of items;
+     */
+    refund(item:string,quantity:number){
+        let shoppingList = this.dec.get(this.clientId);
+        let shoppingListInc = this.inc.get(this.clientId);
+        if(shoppingListInc.has(item) && shoppingList.has(item)){
+            const [notBoughtDec,refund] = shoppingList.get(item);
+            const [notBoughtInc,bought] = shoppingListInc.get(item);
+            if(refund > bought) throw new Error("Cant refund more than bought items!");
+            shoppingList.set(item,[notBoughtDec,refund+ quantity]);
+        }
+        //there were no deletions of a product;
+        else if (!shoppingList.has(item)){
+            shoppingList.set(item,[0,quantity]);
         }
     }
     /**
      * Deletes the bought items from the shopping list
      * @param item 
      */
-    cleanBought(item:string){
+    /*cleanBought(item:string){
         for (let [key,shoppingList] of this.dec){
             let shoppingListInc = this.inc.get(key);
             let [_,boughtInc] = shoppingListInc.get(item);
@@ -99,7 +126,7 @@ class PNShoppingMap{
                 shoppingList.set(item,[0,boughtInc]);
             }
         }
-    }    
+    }    */
     /**
      *   Method to convert a map to an object
      */
@@ -110,6 +137,8 @@ class PNShoppingMap{
         });
         return obj;
     }
+   
+    
     /**
      * Method to convert the inc and dec maps to JSON strings
      * @returns {string} JSON string of the inc and dec maps
@@ -117,7 +146,8 @@ class PNShoppingMap{
     toJSON(): string {
         const incObj = this.mapToObject(this.inc);
         const decObj = this.mapToObject(this.dec);
-        return JSON.stringify({ inc: incObj, dec: decObj });
+        const vectorclock = Object.fromEntries(this.productKeySet.vectorclock_);
+        return JSON.stringify({ inc: incObj, dec: decObj,vectorclock:vectorclock,productKeySet:Array.from(this.productKeySet.set_)});
     }
     /**
      *  Method to convert an object to a map
@@ -139,6 +169,10 @@ class PNShoppingMap{
         const instance = new PNShoppingMap(clientID,listID);
         instance.setInc(PNShoppingMap.objectToMap(obj.inc));
         instance.setDec(PNShoppingMap.objectToMap(obj.dec));
+        const productKeySet = new OptOrSet(clientID,listID);
+        productKeySet.set_= new Set([...(obj.productKeySet)]);
+        productKeySet.vectorclock_ = new Map(Object.entries(obj.vectorclock))
+        instance.keySet = productKeySet;
         return instance;
     }
     /**
@@ -213,6 +247,20 @@ class PNShoppingMap{
                 this.max(shoppingListThis,shoppingListOther);
             }
         });
+        
+        // Merge the existing products set for the keys
+        this.keySet.merge(other.keySet)
+        const toRemove:Set<string>=new Set();
+        this.keySet.set_.forEach((productTuple)=>{
+            const productName = productTuple[0];
+            if(this.calcTotal(productName)<=0){
+                if(!toRemove.has(productName)) toRemove.add(productName)
+            }
+        })
+        // Remove the keys if there people bought too much of its kind
+        toRemove.forEach((removeItem)=>{
+            this.keySet.remove(removeItem);
+        });
     }
 
     /**
@@ -244,8 +292,14 @@ class PNShoppingMap{
     }
 
     read(item:string,readBought=false){
-       return this.calcTotal(item,readBought) ?? 0;
+        if(this.productKeySet.contains(item)){
+            return this.calcTotal(item,readBought) ?? 0;
+        }
+        else{
+            console.log("Item doesn't exist in the list or previously deleted")
+        }
     }
+    
     getClientId(){
         return this.clientId;
     }
@@ -284,6 +338,12 @@ class PNShoppingMap{
             this.dec.set(clientID, new Map());
         }
         this.dec.get(clientID).set(item, [quantity, quantityBought]);
+    }
+    public get keySet(){
+        return this.productKeySet;
+    }
+    public set keySet(productKeySet:OptOrSet){
+        this.productKeySet = productKeySet;
     }
 
 }
