@@ -109,8 +109,15 @@ async function cacheMiss(port: number, listID: string) {
 }
 
 async function processRequests(sock: zmq.Dealer) {
+  let interval = setInterval(() => {
+    const readyMsg = {
+      type: "ready",
+    };
+    sock.send(JSON.stringify(readyMsg));
+  }, 5000);
+
   for await (const msg of sock) {
-    console.log(msg.map(val => val.toString()));
+    clearInterval(interval);
     const contents = JSON.parse(msg[3].toString());
     
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
@@ -194,6 +201,13 @@ async function processRequests(sock: zmq.Dealer) {
     } catch (e) {
       await sock.send([msg[1], "", JSON.stringify({type: "error", message: "Error in operation."})]);
     }
+
+    interval = setInterval(() => {
+      const readyMsg = {
+        type: "ready",
+      };
+      sock.send(JSON.stringify(readyMsg));
+    }, 5000);
   }
 }
 
