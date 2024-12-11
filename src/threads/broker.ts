@@ -7,7 +7,7 @@ import workerProcess from "./worker.js";
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
-const workers = 2;
+const workers = 5;
 const workerIds = {};
 const mapping = {};
 const basePort = 5000;
@@ -144,7 +144,7 @@ async function backend(backSvr: zmq.Router, frontSvr: zmq.Router, hashRing: Hash
         break;
       default:
         mapping[msg[0].toString()] = WorkerState.READY;
-        await frontSvr.send([msg[2], msg[3], msg[4]]);
+        await frontSvr.send([msg[1], msg[2], msg[3]]);
         break;
     }
   }
