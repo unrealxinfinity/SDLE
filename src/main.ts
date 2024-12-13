@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as zmq from "zeromq";
 import cluster from "node:cluster";
 import * as taskManager from "./clientTaskManager.js";
+import { readJsonFile } from "./utills/files.js";
 
 enum ConsoleState{
     LOGIN, 
@@ -28,14 +29,7 @@ let persist = false;
 let consoleState : ConsoleState = ConsoleState.LOGIN;
 
 const clients = 10;
-let automatedTesting = true;
-
-
-
-const readJsonFile = (filePath: string): any => {
-    const data = fs.readFileSync(filePath+'.json', 'utf-8');
-    return JSON.parse(data);
-}
+let automatedTesting = false;
 
 function readFromLocalStorage(userName : string | null){
     if(userName != null && fs.existsSync("./localStorage/"+userName+".json")){

@@ -198,17 +198,13 @@ if (cluster.isPrimary) {
       ID: i,
     });*/
 
-  cluster.on("death", function (worker) {
-    console.log("worker " + worker.pid + " died");
-  });
-
-  var deadClients = 0;
-  cluster.on("disconnect", function (worker) {
-    deadClients++;
-    if (deadClients === clients){
-      console.log("finished");
-      process.exit(0);
-    }
+  cluster.on("disconnect", async function (worker) {
+    console.log(worker.process.pid);
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    cluster.fork({
+      "OLDPID": worker.process.pid,
+      "INITIAL": true
+    });
   });
 
   await loadBalancer(hashRing);

@@ -1,6 +1,8 @@
 import * as HashRing from "hashring";
 import * as zmq from "zeromq";
+import * as fs from 'fs';
 import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
+import { readJsonFile } from "../utills/files.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
 let hr: HashRing | null = null;
@@ -23,6 +25,19 @@ function buildHashRing(ids: any): HashRing {
 }
 
 export default async function workerProcess() {
+  if (fs.existsSync(process.env.OLDPID+'.json')) {
+    const loadedLists = readJsonFile(process.env.OLDPID);
+    const envData = JSON.parse(loadedLists.envData);
+    process.env.ID = envData.ID.toString();
+    process.env.WORKERIDS = JSON.stringify(envData.WORKERIDS);
+    process.env.PORT = envData.PORT.toString();
+    console.log(loadedLists.listData);
+    const listData = JSON.parse(loadedLists.listData);
+    for (const list in listData) {
+      shoppingLists[list] = PNShoppingMap.fromJSON(listData[list]);
+    }
+  }
+  
   const sock = new zmq.Dealer();
   const listReceiver = new zmq.Reply();
   sock.routingId = process.env.ID;
@@ -38,6 +53,12 @@ export default async function workerProcess() {
     type: "ready",
   };
   await sock.send(JSON.stringify(readyMsg));
+
+  setInterval(() => {
+    const envData = JSON.stringify({PORT: process.env.PORT, ID: process.env.ID, WORKERIDS: process.env.WORKERIDS});
+    const listData = JSON.stringify(shoppingLists, null, 2);
+    fs.writeFileSync((process.env.OLDPID ?? process.pid)+'.json', JSON.stringify({listData, envData}), 'utf8')
+  }, 2);
 
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
 }
