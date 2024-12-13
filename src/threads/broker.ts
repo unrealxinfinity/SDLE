@@ -2,7 +2,9 @@ import * as zmq from "zeromq";
 import cluster from "node:cluster";
 import { v4 as uuidv4 } from "uuid";
 import * as HashRing from "hashring";
+import * as fs from 'fs';
 import workerProcess from "./worker.js";
+import { readJsonFile } from "../utills/files.js";
 
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
@@ -172,26 +174,41 @@ if (cluster.isPrimary) {
   // @ts-expect-error
   const hashRing = new HashRing.default([], "md5", { replicas: 1 }) as HashRing;
 
-  for (var i = 0; i < workers; i++) {
-    lastUsedPort = i;
-    const id = uuidv4();
-    const node = {};
-    const port = basePort + i;
+  if (fs.existsSync("broker.json")) {
+    const loadedState = readJsonFile("broker");
+    lastUsedPort = loadedState.lastUsedPort;
+    for (const worker in loadedState.workerIds) {
+      workerIds[worker] = loadedState.workerIds[worker];
 
-    node[id] = { vnodes: 5 };
-    workerIds[id] = port;
-    hashRing.add(node);
-    mapping[id] = WorkerState.BUSY;
+      const node = {};
+      node[worker] = { vnodes: 5 };
+      hashRing.add(node);
+      mapping[worker] = WorkerState.BUSY;
+    }
   }
-  for (const id in workerIds) {
-    cluster.fork({
-      TYPE: "worker",
-      ID: id,
-      PORT: workerIds[id],
-      WORKERIDS: JSON.stringify(workerIds),
-      INITIAL: true
-    })
+  else {
+    for (var i = 0; i < workers; i++) {
+      lastUsedPort = i;
+      const id = uuidv4();
+      const node = {};
+      const port = basePort + i;
+  
+      node[id] = { vnodes: 5 };
+      workerIds[id] = port;
+      hashRing.add(node);
+      mapping[id] = WorkerState.BUSY;
+    }
+    for (const id in workerIds) {
+      cluster.fork({
+        TYPE: "worker",
+        ID: id,
+        PORT: workerIds[id],
+        WORKERIDS: JSON.stringify(workerIds),
+        INITIAL: true
+      })
+    }
   }
+  
   /*for (var i = 0; i < clients; i++)
     cluster.fork({
       TYPE: "client",
@@ -206,6 +223,10 @@ if (cluster.isPrimary) {
       "INITIAL": true
     });
   });
+
+  setInterval(() => {
+    fs.writeFileSync("broker.json", JSON.stringify({workerIds, lastUsedPort}), 'utf8')
+  }, 30000);
 
   await loadBalancer(hashRing);
 } else {
