@@ -7,6 +7,7 @@ import { readJsonFile } from "../utills/files.js";
 const backAddr = "tcp://127.0.0.1:12345";
 let hr: HashRing | null = null;
 const shoppingLists: {[key: string]: PNShoppingMap} = {};
+const toSync = [];
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -58,8 +59,18 @@ export default async function workerProcess() {
     const envData = JSON.stringify({PORT: process.env.PORT, ID: process.env.ID, WORKERIDS: process.env.WORKERIDS});
     const listData = JSON.stringify(shoppingLists, null, 2);
     fs.writeFileSync((process.env.OLDPID ?? process.pid)+'.json', JSON.stringify({listData, envData}), 'utf8')
-  }, 2);
+  }, 30000);
 
+  setInterval(() => {
+    if (toSync.length !== 0) {
+      const list = toSync.shift();
+      try {
+        syncList(list);
+      } catch (e) {
+        console.log("error syncing");
+      }
+    }
+  }, 500);
   await Promise.all([processRequests(sock), workerComms(listReceiver)]);
 }
 
@@ -180,7 +191,7 @@ async function processRequests(sock: zmq.Dealer) {
           else {
             shoppingLists[contents.id].join(receivedList);
           }
-          await syncList(contents.id);
+          if (!toSync.includes(contents.id)) toSync.push(contents.id);
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`
