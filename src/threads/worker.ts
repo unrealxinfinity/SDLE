@@ -58,7 +58,7 @@ export default async function workerProcess() {
   setInterval(() => {
     const envData = JSON.stringify({PORT: process.env.PORT, ID: process.env.ID, WORKERIDS: process.env.WORKERIDS});
     const listData = JSON.stringify(shoppingLists, null, 2);
-    fs.writeFileSync((process.env.OLDPID ?? process.pid)+'.json', JSON.stringify({listData, envData}), 'utf8')
+    fs.writeFileSync(process.pid+'.json', JSON.stringify({listData, envData}), 'utf8')
   }, 30000);
 
   setInterval(() => {
