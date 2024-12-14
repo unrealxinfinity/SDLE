@@ -9,11 +9,12 @@ import { readJsonFile } from "../utills/files.js";
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
-const workers = 5;
+const workers = 1;
 const workerIds = {};
 const mapping = {};
 const basePort = 5000;
 let lastUsedPort = 0;
+const pids = {};
 
 enum WorkerState {
   BUSY,
@@ -173,8 +174,9 @@ if (cluster.isPrimary) {
 
   // @ts-expect-error
   const hashRing = new HashRing.default([], "md5", { replicas: 1 }) as HashRing;
+  const loadedState = fs.existsSync("broker.json") ? readJsonFile("broker") : null;
 
-  if (fs.existsSync("broker.json")) {
+  if (loadedState) {
     const loadedState = readJsonFile("broker");
     lastUsedPort = loadedState.lastUsedPort;
     for (const worker in loadedState.workerIds) {
@@ -184,6 +186,16 @@ if (cluster.isPrimary) {
       node[worker] = { vnodes: 5 };
       hashRing.add(node);
       mapping[worker] = WorkerState.BUSY;
+
+      const forked = cluster.fork({
+        TYPE: "worker",
+        ID: worker,
+        PORT: workerIds[worker],
+        WORKERIDS: JSON.stringify(loadedState.workerIds),
+        INITIAL: true
+      });
+
+      pids[forked.process.pid] = worker;
     }
   }
   else {
@@ -199,13 +211,15 @@ if (cluster.isPrimary) {
       mapping[id] = WorkerState.BUSY;
     }
     for (const id in workerIds) {
-      cluster.fork({
+      const forked = cluster.fork({
         TYPE: "worker",
         ID: id,
         PORT: workerIds[id],
         WORKERIDS: JSON.stringify(workerIds),
         INITIAL: true
-      })
+      });
+
+      pids[forked.process.pid] = id;
     }
   }
   
@@ -219,8 +233,9 @@ if (cluster.isPrimary) {
     console.log(worker.process.pid);
     await new Promise(resolve => setTimeout(resolve, 5000));
     cluster.fork({
-      "OLDPID": worker.process.pid,
-      "INITIAL": true
+      TYPE: "worker",
+      ID: pids[worker.process.pid],
+      INITIAL: true
     });
   });
 
