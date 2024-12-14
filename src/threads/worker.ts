@@ -91,10 +91,17 @@ async function syncList(list: string) {
   
     await requester.send(JSON.stringify(request));
   
-    const msg = JSON.parse(((await requester.receive()).toString()));
+    let reply: any;
+
+    try {
+      reply = JSON.parse(((await requester.receive()).toString()));;
+    } catch (e) {
+      reply = {};
+    }
+
     requester.disconnect(`tcp://127.0.0.1:${workers[owner]}`);
-    if (msg.list) {
-      shoppingLists[list].join(PNShoppingMap.fromJSON(msg.list));
+    if (reply.list) {
+      shoppingLists[list].join(PNShoppingMap.fromJSON(reply.list));
     }
   }
 }
