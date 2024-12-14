@@ -9,7 +9,7 @@ import { readJsonFile } from "../utills/files.js";
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
-const workers = 1;
+const workers = 2;
 const workerIds = {};
 const mapping = {};
 const basePort = 5000;
@@ -232,11 +232,14 @@ if (cluster.isPrimary) {
   cluster.on("disconnect", async function (worker) {
     console.log(worker.process.pid);
     await new Promise(resolve => setTimeout(resolve, 5000));
-    cluster.fork({
+    const forked = cluster.fork({
       TYPE: "worker",
       ID: pids[worker.process.pid],
       INITIAL: true
     });
+
+    pids[forked.process.pid] = pids[worker.process.pid];
+    delete pids[worker.process.pid];
   });
 
   setInterval(() => {
