@@ -174,23 +174,25 @@ async function processRequests(sock: zmq.Dealer) {
       switch (contents.type) {
         case "kill":
           for (const list in shoppingLists) {
-            const responsible = hr.get(list);
-            await syncList(list);
-            const sender = new zmq.Request();
-            console.log(
-              `tcp://127.0.0.1:${contents.workerIds[responsible]}`
-            );
-            sender.connect(
-              `tcp://127.0.0.1:${contents.workerIds[responsible]}`
-            );
+            const responsibles = hr.range(list, 3);
+            for (const responsible of responsibles) {
+              await syncList(list);
+              const sender = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+              console.log(
+                `tcp://127.0.0.1:${contents.workerIds[responsible]}`
+              );
+              sender.connect(
+                `tcp://127.0.0.1:${contents.workerIds[responsible]}`
+              );
 
-            while (true) {
-              const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
-              await sender.send(JSON.stringify(msg));
+              while (true) {
+                const msg = { id: list, list: shoppingLists[list].toJSON(), type: "killed" };
+                await sender.send(JSON.stringify(msg));
 
-              const [rep] = await sender.receive();
-              const repObj = JSON.parse(rep.toString());
-              if (repObj.type === "ACK") break;
+                const [rep] = await sender.receive();
+                const repObj = JSON.parse(rep.toString());
+                if (repObj.type === "ACK") break;
+              }
             }
           }
           
