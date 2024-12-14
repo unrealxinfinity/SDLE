@@ -242,9 +242,9 @@ if (cluster.isPrimary) {
     delete pids[worker.process.pid];
   });
 
-  setInterval(() => {
+  /*setInterval(() => {
     fs.writeFileSync("broker.json", JSON.stringify({workerIds, lastUsedPort}), 'utf8')
-  }, 15000);
+  }, 15000);*/
 
   await loadBalancer(hashRing);
 } else {

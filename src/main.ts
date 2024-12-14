@@ -33,20 +33,20 @@ const users : Map<string, user> = new Map();
 const frontAddr = "tcp://127.0.0.1:12346";
 
 
-
+zmq.context.blocky = false;
 
 const clients = 2;
 const num_of_lists = 2;
 const testingTime = 12;
 let automatedTesting = false;
-let persist = true;
+let persist = false;
 const debug : [string, string] | null = null;//["1734145739107", "./listLogs/List2.txt"];
 
 
 
 
 function readFromLocalStorage(userName : string | null){
-    if(userName != null && fs.existsSync("./localStorage/"+userName+".json")){
+    if(userName != null && fs.existsSync("./localStorage/"+userName+".json") && !users.has(userName)){
         let user : user;
         if(users.has(userName)) user = users.get(userName);
         else user = {name: userName, state: null, states: new Map(), lists: new Map(), consoleState: ConsoleState.START};
@@ -69,17 +69,18 @@ function readFromLocalStorage(userName : string | null){
                     crdt.addDec(userName, itemName, quantity, quantityBought);
                 }
             }
-            console.log(crdt.toJSON());
-            const state : state = {shoppingListId: shoppingListId, crdt: crdt, sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}; 
-            state.sock.connect(frontAddr);
+            const state : state = {shoppingListId: shoppingListId, crdt: crdt, sock: null}; 
             user.state = state;
             user.states.set(shoppingListId, state);
             users.set(userName, user);
         }
         if(automatedTesting) taskManager.pushAnswer("Login was successfull, loaded data from localStorage");
     }
-    else if(automatedTesting){
+    else if(automatedTesting && !users.has(userName)){
         taskManager.pushAnswer("Login was successfull, started a new user");
+    }
+    else if(automatedTesting){
+        taskManager.pushAnswer("Login was successfull");
     }
 }
 
@@ -120,14 +121,18 @@ async function handleInput(user : user){
 
     async function fetchShoppingList(id : string, name : string, user : user){
         if(!user.states.has(name)){
-            const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
-            newState.sock.connect(frontAddr);
+            const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: null}
             const success = await pull(user.name, newState);
             if(success){
                 user.lists.set(name, id);
                 user.states.set(id, newState);
                 user = pickShoppingList(name, user);
+                viewShoppingList(user.state);
                 console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
+                return user;
+            }
+            else{
+                console.log("Failed to fetch list " + id);
                 return user;
             }
         }
@@ -152,8 +157,7 @@ async function handleInput(user : user){
         if(!user.states.has(name)){
             let id = generateGUId();
             if(automatedTesting)id = id = user.name.slice(6);
-            const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})}
-            newState.sock.connect(frontAddr);
+            const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: null}
             user.lists.set(name, id);
             user.states.set(id, newState);
             user = pickShoppingList(name, user);
@@ -171,6 +175,10 @@ async function handleInput(user : user){
 
     
     async function pull(userName : string, state : state){
+        if(state.sock == null){
+            state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000})
+            state.sock.connect(frontAddr);
+        }
         const fetchMsg = {
             type: "fetch",
             id: state.shoppingListId.toString()
@@ -178,30 +186,14 @@ async function handleInput(user : user){
 
     
         const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
-    
         try {
             const fetchReply = JSON.parse((await state.sock.receive()).toString());
             console.log(fetchReply.message);
+            console.log(fetchReply);
             if(fetchReply.type == "fetch"){
-                const inc = JSON.parse(fetchReply.list.toString()).inc;
-                const dec = JSON.parse(fetchReply.list.toString()).dec;
-                const incoming_crdt = new PNShoppingMap(userName, state.shoppingListId);
-                for(const clientID in inc){
-                    const items = inc[clientID];
-                    for(const itemName in items){
-                        const [quantity, quantityBought] = items[itemName];
-                        incoming_crdt.addInc(clientID, itemName, quantity, quantityBought);
-                    }
-                }
-                for(const clientID in dec){
-                    const items = dec[clientID];
-                    for(const itemName in items){
-                        const [quantity, quantityBought] = items[itemName];
-                        incoming_crdt.addDec(clientID, itemName, quantity, quantityBought);
-                    }
-                }
+                const incoming_crdt = PNShoppingMap.fromJSON(fetchReply.list);
+                console.log(incoming_crdt);
                 state.crdt.join(incoming_crdt);
-                console.log(state.crdt);
                 if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
                 return true;
             }
@@ -215,11 +207,19 @@ async function handleInput(user : user){
     }
 
     async function push(state : state){
+        if(state.sock == null){
+            state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
+        }
         const updateMsg = {
             type: "update",
             id: state.shoppingListId.toString(),
             list: state.crdt.toJSON()
         };
+
+        console.log(state.crdt);
+        console.log(state.crdt.toJSON());
+        console.log(PNShoppingMap.fromJSON(state.crdt.toJSON()))
         
         const updateRequest = await state.sock.send(JSON.stringify(updateMsg));
     
@@ -280,7 +280,7 @@ async function handleInput(user : user){
         for(const splittedContent of splittedContents){
             const splittedListContents = splittedContent.split(/[\s]+/);
             const splittedListContentsLines = splittedContent.split(/[\n]+/);
-            if(splittedListContents[])
+            if(splittedListContents[4])
         }*/
 
     }
@@ -322,10 +322,11 @@ async function handleInput(user : user){
 
     
     const commands : Array<string> = []//readJsonFile('./test').commands;
-    //if(debug !== null) jumpToCommand(commands);
+    if(debug !== null) jumpToCommand(commands);
 
     while(true){
         if(automatedTesting && user.consoleState == ConsoleState.LOGIN && commands.length == 0) await taskManager.manageLogin(commands, process.env.USERNAME, num_of_lists, testingTime);
+        if(automatedTesting && user.consoleState == ConsoleState.START && commands.length == 0) await taskManager.manageListCreation(commands, user.lists);
         if(automatedTesting && user.consoleState == ConsoleState.SHOPPING_LIST && commands.length == 0) await taskManager.manageRandomAction(commands, user.state.shoppingListId, user.state.crdt, user.lists);
         let answer : string = "";
         if(commands.length > 0) {
@@ -392,9 +393,7 @@ async function handleInput(user : user){
                         await push(user.state)
                     }
                     else if(command == "pull" && answerArrayLength == 1){
-                        console.log(user.state.crdt);
                         await pull(user.name, user.state)
-                        console.log(user.state.crdt);
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
@@ -410,7 +409,6 @@ async function handleInput(user : user){
                         const name : string = answerArray[2];
                         user = await fetchShoppingList(id, name, user);
                         text = initial_text;
-                        viewShoppingList(user.state);
                     }
                     else if(command == "create" && answerArrayLength == 2){
                         const name : string = answerArray[1];
@@ -438,10 +436,7 @@ async function handleInput(user : user){
                         else{
                             user = {name: userName, state: {shoppingListId: "", crdt: null, sock: null}, states: new Map(), lists: new Map(), consoleState: ConsoleState.START};
                             users.set(userName, user);
-                        }
-                        if(automatedTesting){
-                            await taskManager.manageListCreation(commands, user.lists);
-                        }               
+                        }            
                     }
                     break;
                 }
