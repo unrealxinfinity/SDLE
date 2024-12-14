@@ -113,7 +113,14 @@ async function syncLists() {
 
     await requester.send(JSON.stringify(request));
 
-    const reply = JSON.parse(((await requester.receive()).toString()));;
+    let reply: any;
+
+    try {
+      reply = JSON.parse(((await requester.receive()).toString()));;
+    } catch (e) {
+      reply = {};
+    }
+
     for (const list in reply) {
       if (!(list in shoppingLists)) shoppingLists[list] = PNShoppingMap.fromJSON(reply[list], null, list);
       else shoppingLists[list].join(PNShoppingMap.fromJSON(reply[list], null , list));
