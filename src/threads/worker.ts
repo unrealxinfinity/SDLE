@@ -59,7 +59,7 @@ export default async function workerProcess() {
     const envData = JSON.stringify({PORT: process.env.PORT, ID: process.env.ID, WORKERIDS: process.env.WORKERIDS});
     const listData = JSON.stringify(shoppingLists, null, 2);
     fs.writeFileSync(process.env.ID+'.json', JSON.stringify({listData, envData}), 'utf8')
-  }, 30000);
+  }, 10000);
 
   setInterval(() => {
     if (toSync.length !== 0) {

@@ -244,7 +244,7 @@ if (cluster.isPrimary) {
 
   setInterval(() => {
     fs.writeFileSync("broker.json", JSON.stringify({workerIds, lastUsedPort}), 'utf8')
-  }, 30000);
+  }, 15000);
 
   await loadBalancer(hashRing);
 } else {
