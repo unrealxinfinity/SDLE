@@ -179,32 +179,38 @@ async function handleInput(user : user){
     
         const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
     
-        const fetchReply = JSON.parse((await state.sock.receive()).toString());
-        console.log(fetchReply.message);
-        if(fetchReply.type == "fetch"){
-            const inc = JSON.parse(fetchReply.list.toString()).inc;
-            const dec = JSON.parse(fetchReply.list.toString()).dec;
-            const incoming_crdt = new PNShoppingMap(userName, state.shoppingListId);
-            for(const clientID in inc){
-                const items = inc[clientID];
-                for(const itemName in items){
-                    const [quantity, quantityBought] = items[itemName];
-                    incoming_crdt.addInc(clientID, itemName, quantity, quantityBought);
+        try {
+            const fetchReply = JSON.parse((await state.sock.receive()).toString());
+            console.log(fetchReply.message);
+            if(fetchReply.type == "fetch"){
+                const inc = JSON.parse(fetchReply.list.toString()).inc;
+                const dec = JSON.parse(fetchReply.list.toString()).dec;
+                const incoming_crdt = new PNShoppingMap(userName, state.shoppingListId);
+                for(const clientID in inc){
+                    const items = inc[clientID];
+                    for(const itemName in items){
+                        const [quantity, quantityBought] = items[itemName];
+                        incoming_crdt.addInc(clientID, itemName, quantity, quantityBought);
+                    }
                 }
-            }
-            for(const clientID in dec){
-                const items = dec[clientID];
-                for(const itemName in items){
-                    const [quantity, quantityBought] = items[itemName];
-                    incoming_crdt.addDec(clientID, itemName, quantity, quantityBought);
+                for(const clientID in dec){
+                    const items = dec[clientID];
+                    for(const itemName in items){
+                        const [quantity, quantityBought] = items[itemName];
+                        incoming_crdt.addDec(clientID, itemName, quantity, quantityBought);
+                    }
                 }
+                state.crdt.join(incoming_crdt);
+                console.log(state.crdt);
+                if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
+                return true;
             }
-            state.crdt.join(incoming_crdt);
-            console.log(state.crdt);
-            if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
-            return true;
+        } catch (e) {
+            console.log("Pull failed.");
+            state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
+            if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled");
         }
-        if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled");
         return false;
     }
 
@@ -217,10 +223,16 @@ async function handleInput(user : user){
         
         const updateRequest = await state.sock.send(JSON.stringify(updateMsg));
     
-        const updateReply = JSON.parse((await state.sock.receive()).toString());
+        try {
+            const updateReply = JSON.parse((await state.sock.receive()).toString());
 
-        console.log(updateReply.message);
-        if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pushed!\n");
+            console.log(updateReply.message);
+        } catch (e) {
+            if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pushed!\n");
+            state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
+            console.log("Push failed.");
+        }
     }
 
     function persistLocalStorage(){
