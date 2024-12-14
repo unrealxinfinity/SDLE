@@ -224,9 +224,9 @@ if (cluster.isPrimary) {
     });
   });
 
-  setInterval(() => {
+  /*setInterval(() => {
     fs.writeFileSync("broker.json", JSON.stringify({workerIds, lastUsedPort}), 'utf8')
-  }, 30000);
+  }, 30000);*/
 
   await loadBalancer(hashRing);
 } else {

@@ -13,6 +13,9 @@ let currentRecipe : PNShoppingMap = null;
 
 let user = null;
 
+let initialTime = null;
+let testing_time = null;
+
 let addRemoveProb = Math.random();
 let pushProb = Math.random();
 let pullProb = Math.random();
@@ -40,13 +43,13 @@ export function pushAnswer(answer : string){
 export function pushCartContents(crdt : PNShoppingMap, answer : string){
     for(const itemName of crdt.getAllItems()){
         const quantity = crdt.calcTotal(itemName);
-        if(quantity > 0) answer += quantity + "x " + itemName + ";\n";
+        if(quantity > 0) answer += quantity + "x " + itemName + "\n";
     }
     pushAnswer(answer);
 }
 
 
-export async function manageLogin(commands : Array<string>, userName : string, clients : number) {
+export async function manageLogin(commands : Array<string>, userName : string, num_of_lists : number, testingTime : number) {
     function createRecipe(name : string, ingredients : Array<string>, quantities : Array<number>){
         const crdt = new PNShoppingMap(name, "", false);
 
@@ -57,9 +60,14 @@ export async function manageLogin(commands : Array<string>, userName : string, c
         
 
     }
-    for(let i = 1; i <= clients; i++){
+
+    initialTime = new Date().getTime();
+    testing_time = testingTime
+
+    for(let i = 1; i <= num_of_lists; i++){
         listIDs.push(i.toString());
     }
+
     user = userName;
     await pushAction(commands, "login " + user, "logged into the system");
 
@@ -75,9 +83,13 @@ export async function manageListCreation(commands : Array<string>, lists : Map<s
     if(lists.has(id)){
         await pushAction(commands, "pick " + id, "Picked list" + id);
     }
-    else{
+    else if(listIDs.includes(id)){
         await pushAction(commands, "create " + id, "Created list " + id);
-        await pushAction(commands, "push", "Pushed List " + id);
+        await pushAction(commands, "push", "Pushed list " + id);
+    }
+    else{
+        let randomListID = listIDs[Math.floor(Math.random()*listIDs.length)];
+        await pushAction(commands, "fetch " + randomListID + " " + randomListID, "Fetched list " + randomListID);
     }
     
 }
@@ -86,8 +98,8 @@ export async function manageListCreation(commands : Array<string>, lists : Map<s
 
 
 
-export async function manageRandomAction(commands : Array<string>, crdt : PNShoppingMap, lists : Map<string, string>){
-    async function manageAddOrRemove(commands : Array<string>, crdt : PNShoppingMap){
+export async function manageRandomAction(commands : Array<string>, shoppingListID : string, crdt : PNShoppingMap, lists : Map<string, string>){
+    async function manageAddOrRemove(commands : Array<string>, shoppingListID : string, crdt : PNShoppingMap){
         function getAllItemQuantities(crdt : PNShoppingMap){
             const allItems : Set<string> = crdt.getAllItems();
             const allItemsQuantities : Map<string, number> = new Map();
@@ -113,7 +125,7 @@ export async function manageRandomAction(commands : Array<string>, crdt : PNShop
             return itemChoice;
         }
     
-        async function performAction(currentCart : Map<string, number>, recipeCart : Map<string, number>, itemChoice : Array<string>){
+        async function performAction(shoppingListID : string, currentCart : Map<string, number>, recipeCart : Map<string, number>, itemChoice : Array<string>){
             if(itemChoice.length == 0){
                 await pushAction(commands, "close", "closed the system");
             }
@@ -123,12 +135,12 @@ export async function manageRandomAction(commands : Array<string>, crdt : PNShop
                 if(currentCart.has(randomItemName) && !recipeCart.has(randomItemName)){
                     const quantity = currentCart.get(randomItemName);
                     const randomQuantity = Math.floor(Math.random()*quantity+1);
-                    await pushAction(commands, "rem " + randomQuantity + " " + randomItemName, "Removed " + randomQuantity + "x " + randomItemName + " from the shopping cart");
+                    await pushAction(commands, "rem " + randomQuantity + " " + randomItemName, "Removed " + randomQuantity + "x " + randomItemName + " from list " + shoppingListID);
                 }
                 else if(recipeCart.has(randomItemName) && !currentCart.has(randomItemName)){
                     const quantity = recipeCart.get(randomItemName);
                     const randomQuantity = Math.floor(Math.random()*quantity+1);
-                    await pushAction(commands, "add " + randomQuantity + " " + randomItemName, "Added " + randomQuantity + "x " + randomItemName + " to the shopping cart");
+                    await pushAction(commands, "add " + randomQuantity + " " + randomItemName, "Added " + randomQuantity + "x " + randomItemName + " to list " + shoppingListID);
                 }
                 else{
                     const recipeQuantity = recipeCart.get(randomItemName);
@@ -137,12 +149,12 @@ export async function manageRandomAction(commands : Array<string>, crdt : PNShop
                     if(recipeQuantity > currentQuantity){
                         const quantity = recipeQuantity-currentQuantity
                         const randomQuantity = Math.floor(Math.random()*quantity+1);
-                        await pushAction(commands, "add " + randomQuantity + " " + randomItemName, "Added " + randomQuantity + "x " + randomItemName + " to the shopping cart");
+                        await pushAction(commands, "add " + randomQuantity + " " + randomItemName, "Added " + randomQuantity + "x " + randomItemName + " to list " + shoppingListID);
                     }
                     else if(recipeQuantity < currentQuantity){
                         const quantity = currentQuantity-recipeQuantity
                         const randomQuantity = Math.floor(Math.random()*quantity+1);
-                        await pushAction(commands, "rem " + randomQuantity + " " + randomItemName, "Removed " + randomQuantity + "x " + randomItemName + " from the shopping cart");
+                        await pushAction(commands, "rem " + randomQuantity + " " + randomItemName, "Removed " + randomQuantity + "x " + randomItemName + " from list " + shoppingListID);
                     }
                 }
             }
@@ -152,14 +164,17 @@ export async function manageRandomAction(commands : Array<string>, crdt : PNShop
         const recipeCart : Map<string, number> = getAllItemQuantities(currentRecipe);
     
         const itemChoice : Array<string> = getItemPossibleChoices(currentCart, recipeCart);
-        await performAction(currentCart, recipeCart, itemChoice);
+        await performAction(shoppingListID, currentCart, recipeCart, itemChoice);
     
     
     }
 
 
-    async function manageChangeList(commands : Array<string>, lists : Map<string, string>){
-        const randomListID = listIDs[Math.floor(Math.random()*listIDs.length)];
+    async function manageChangeList(commands : Array<string>, shoppingListID : string, lists : Map<string, string>){
+        let randomListID = listIDs[Math.floor(Math.random()*listIDs.length)];
+        while(randomListID == shoppingListID){
+            randomListID = listIDs[Math.floor(Math.random()*listIDs.length)]
+        }
         if(lists.has(randomListID)){
             await pushAction(commands, "pick " + randomListID, "Picked list " + randomListID);
         }
@@ -173,28 +188,33 @@ export async function manageRandomAction(commands : Array<string>, crdt : PNShop
         getRandomRecipe();
     }
 
+    if(new Date().getTime() > initialTime+testing_time*1000){
+        await pushAction(commands, "close", "closed the system");
+        return;
+    }
+
     const randomProb = Math.random();
 
-    const randomProbScaled = (addRemoveProb + pushProb + pullProb)*randomProb;
+    const randomProbScaled = (addRemoveProb + pushProb + pullProb+changeListProb)*randomProb;
 
     if(randomProbScaled <= addRemoveProb){
         pushProb += Math.random();
         pullProb += Math.random();
-        await manageAddOrRemove(commands, crdt);
+        await manageAddOrRemove(commands, shoppingListID, crdt);
     }
     else if(randomProbScaled <= (addRemoveProb+pushProb)){
         pushProb = 0;
         changeListProb = Math.random();
-        await pushAction(commands, "push", "Pushed list");
+        await pushAction(commands, "push", "Pushed list " + shoppingListID);
     }
     else if(randomProbScaled <= (addRemoveProb+pushProb+pullProb)){
         pullProb = 0;
         pushProb = 0;
         changeListProb = Math.random();
-        await pushAction(commands, "pull", "Pulled List");
+        await pushAction(commands, "pull", "Pulled list " + shoppingListID);
     }
     else if(randomProbScaled <= (addRemoveProb+pushProb+pullProb+changeListProb)){
-        await manageChangeList(commands, lists);
+        await manageChangeList(commands, shoppingListID, lists);
     }
 }
 

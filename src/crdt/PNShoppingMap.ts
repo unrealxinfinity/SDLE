@@ -64,13 +64,16 @@ class PNShoppingMap{
             }
             else if (this.calcTotal(item)-quantity===0){
                 this.removeProduct(item);
+                console.log("Deleted " + item + " from the cart!");
+                return;
             }
             const [notBought,bought] = this.dec.get(this.clientId).get(item);
             this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
             if(this.printAnswers)console.log("-" + quantity + " " + item + " was updated from the cart!");
         }else{
-            this.dec.get(this.clientId).set(item,[quantity,0]);
-            if(this.printAnswers)console.log(item + " was removed from the cart!");
+            this.removeProduct(item);
+            //this.dec.get(this.clientId).set(item,[quantity,0]);
+            if(this.printAnswers)console.log(item + " was deleted from the cart!");
         }
     }
     /**
