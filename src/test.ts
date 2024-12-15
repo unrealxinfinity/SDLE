@@ -15,10 +15,18 @@ console.log(list1.toJSON())
 let test:any = PNShoppingMap.fromJSON(list1.toJSON())
 console.log("ola");*/
 let list1 = new PNShoppingMap("Client1","list1");
+let list2 = new PNShoppingMap("Client2","list2");
 
-list1.add("banana", 3);
-let list2 = PNShoppingMap.fromJSON(list1.toJSON());
-list1.join(list2);
+list1.add("banana", 2);
+
+let message = list1.toJSON(); //A push
+
+list2.join(PNShoppingMap.fromJSON(message)); //B pull
+
+list1.add("banana",1);
+list2.removeProduct("banana");
+message = list2.toJSON();// B push
+list1.join(PNShoppingMap.fromJSON(message))//A pull
 console.log("wowo");
 /*
 list2.add("banana");

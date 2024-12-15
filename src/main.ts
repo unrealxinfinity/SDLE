@@ -71,8 +71,6 @@ function readFromLocalStorage(userName : string | null){
     }
 }
 
-
-
 function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
     return new Promise((resolve) => {
         rl.question(text, (answer) => {

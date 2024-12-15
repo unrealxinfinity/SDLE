@@ -4,11 +4,13 @@ import * as fs from 'fs';
 import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 import { readJsonFile } from "../utills/files.js";
 import cluster from "cluster";
+import 'dotenv/config';
 
 const backAddr = "tcp://127.0.0.1:12345";
 let hr: HashRing | null = null;
 const shoppingLists: {[key: string]: PNShoppingMap} = {};
 const toSync = [];
+const toFailure = Number.parseInt(process.env.TOFAILURE);
 
 function buildHashRing(ids: any): HashRing {
   // @ts-expect-error
@@ -168,12 +170,12 @@ async function processRequests(sock: zmq.Dealer) {
   for await (const msg of sock) {
     count++;
 
-    if (count > 5) {
-      //cluster.worker.kill();
-    }
-
     clearInterval(interval);
     const contents = JSON.parse(msg[3].toString());
+
+    if (toFailure > 0 && count > toFailure && contents.type !== "kill") {
+      cluster.worker.kill();
+    }
     
     process.env.WORKERIDS = JSON.stringify(contents.workerIds);
     hr = buildHashRing(contents.workerIds);

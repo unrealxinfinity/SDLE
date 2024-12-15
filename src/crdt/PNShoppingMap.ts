@@ -104,15 +104,30 @@ class PNShoppingMap{
     refund(item:string,quantity:number=1){
         let shoppingList = this.dec.get(this.clientId);
         let shoppingListInc = this.inc.get(this.clientId);
-        if(shoppingListInc.has(item) && shoppingList.has(item)){
-            const [notBoughtDec,refund] = shoppingList.get(item);
-            const [notBoughtInc,bought] = shoppingListInc.get(item);
-            if(refund > bought) throw new Error("Cant refund more than bought items!");
-            shoppingList.set(item,[notBoughtDec,refund+ quantity]);
+        if(shoppingList.has(item)){
+            if(shoppingListInc.has(item)){
+                const [notBoughtDec,refund] = shoppingList.get(item);
+                const [notBoughtInc,bought] = shoppingListInc.get(item);
+                if(refund > bought) throw new Error("Cant refund more than bought items!");
+                shoppingList.set(item,[notBoughtDec,refund+ quantity]);
+            }
+            else{
+                throw new Error("Shopping list has deletions but no actual item?")
+            }
+          
         }
-        //there were no deletions of a product;
-        else if (!shoppingList.has(item)){
+        else if(this.keySet.contains(item)){
+            let total=0;
+            this.inc.forEach((list,client)=>{
+                if(list.has(item)){
+                    total+= list.get(item)[1];
+                }
+            })
+            if(quantity>total){
+                throw new Error("Cant refund more than bought items!")
+            }
             shoppingList.set(item,[0,quantity]);
+            if(this.printAnswers)console.log("+" + quantity + " " + item + " was refunded from the cart!");
         }
     }
     /**
@@ -272,6 +287,26 @@ class PNShoppingMap{
         toRemove.forEach((removeItem)=>{
             this.removeProduct(removeItem);
         });
+
+        // Remove the obsolete items in the counters
+        const toKeep:Set<string>=new Set();
+        this.keySet.set_.forEach((productTuple)=>{
+            toKeep.add(productTuple[0]);
+        })
+        this.inc.forEach((shoppingList,client)=>{
+            shoppingList.forEach((val,product)=>{
+                if(!toKeep.has(product)){
+                    shoppingList.delete(product);
+                }
+            })
+        })
+        this.dec.forEach((shoppingList,client)=>{
+            shoppingList.forEach((val,product)=>{
+                if(!toKeep.has(product)){
+                    shoppingList.delete(product);
+                }
+            })
+        })
     }
 
     /**
