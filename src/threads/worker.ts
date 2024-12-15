@@ -3,6 +3,7 @@ import * as zmq from "zeromq";
 import * as fs from 'fs';
 import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 import { readJsonFile } from "../utills/files.js";
+import cluster from "cluster";
 
 const backAddr = "tcp://127.0.0.1:12345";
 let hr: HashRing | null = null;
@@ -76,7 +77,7 @@ export default async function workerProcess() {
 
 async function syncList(list: string) {
   const workers = JSON.parse(process.env.WORKERIDS);
-  const owners = hr.range(list, 3);
+  const owners = hr.range(list, 2);
 
   for (const owner of owners) {
     if (owner === process.env.ID) continue;
@@ -86,7 +87,7 @@ async function syncList(list: string) {
     const request = {
       type: "sync",
       id: list,
-      list: shoppingLists[list].toJSON()
+      list: shoppingLists[list]?.toJSON() ?? "deleted"
     };
   
     await requester.send(JSON.stringify(request));
@@ -155,6 +156,8 @@ async function cacheMiss(port: number, listID: string) {
 }
 
 async function processRequests(sock: zmq.Dealer) {
+  let count = 0;
+
   let interval = setInterval(() => {
     const readyMsg = {
       type: "ready",
@@ -163,6 +166,12 @@ async function processRequests(sock: zmq.Dealer) {
   }, 5000);
 
   for await (const msg of sock) {
+    count++;
+
+    if (count > 5) {
+      //cluster.worker.kill();
+    }
+
     clearInterval(interval);
     const contents = JSON.parse(msg[3].toString());
     
@@ -200,18 +209,24 @@ async function processRequests(sock: zmq.Dealer) {
           await sock.send([msg[1], "", JSON.stringify(confirmation)]);
           break;
         case "update":
-          const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-          if (!(contents.id in shoppingLists)) {
-            shoppingLists[contents.id] = receivedList;
+          if (contents.list === "delete") {
+            delete shoppingLists[contents.id];
           }
           else {
-            shoppingLists[contents.id].join(receivedList);
+            const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
+            if (!(contents.id in shoppingLists)) {
+              shoppingLists[contents.id] = receivedList;
+            }
+            else {
+              shoppingLists[contents.id].join(receivedList);
+            }
           }
           if (!toSync.includes(contents.id)) toSync.push(contents.id);
           const updateReply = {
             type: "update",
             message: `List ${contents.id} has been updated.`
           };
+          
           
           await sock.send([msg[1], "", JSON.stringify(updateReply)]);
           break;
@@ -220,7 +235,7 @@ async function processRequests(sock: zmq.Dealer) {
           if (!list) {
             const workers = JSON.parse(process.env.WORKERIDS);
 
-            for (const owner of hr.range(contents.id, 3)) {
+            for (const owner of hr.range(contents.id, 2)) {
               if (owner === process.env.ID) continue;
 
               if (await cacheMiss(workers[owner], contents.id) === true) {
@@ -237,6 +252,7 @@ async function processRequests(sock: zmq.Dealer) {
             message: "List has been fetched.",
             list: list.toJSON()
           };
+          console.log(fetchReply);
           await sock.send([msg[1], "", JSON.stringify(fetchReply)]);
           break;
         default:
@@ -277,6 +293,11 @@ async function workerComms(listReceiver: zmq.Reply) {
             await listReceiver.send(JSON.stringify(reply));
             break;
           case "sync":
+            if (msg.list === "deleted") {
+              delete shoppingLists[msg.id];
+              await listReceiver.send(JSON.stringify({}));
+              break;
+            }
             if (!(msg.id in shoppingLists)) {
               shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
             }

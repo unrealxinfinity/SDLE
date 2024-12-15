@@ -99,7 +99,10 @@ async function handleInput(user : user){
         
         for(const itemName of user.state.crdt.getAllItems()){
             const quantity = user.state.crdt.calcTotal(itemName);
-            if(quantity > 0) console.log("   - " + quantity + "x " + itemName + ";");
+            const quantityBought = user.state.crdt.calcTotal(itemName, true);
+            let finalString = "   - " + (quantity) + "x " + itemName + ";";
+            if(quantityBought > 0) finalString += " (Bought " + quantityBought + "x " + itemName + ")"
+            if((quantity) > 0) console.log(finalString);
         }
     
     }
@@ -180,14 +183,18 @@ async function handleInput(user : user){
             const fetchReply = JSON.parse((await state.sock.receive()).toString());
             console.log(fetchReply.message);
             if(fetchReply.type == "fetch"){
+                console.log(fetchReply.list);
                 const incoming_crdt = PNShoppingMap.fromJSON(fetchReply.list);
+                console.log(incoming_crdt.keySet);
                 state.crdt.join(incoming_crdt);
+                console.log(state.crdt.keySet);
                 if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
                 return true;
             }
         } catch (e) {
             console.log("Pull failed.");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
         }
         if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled", "");
         return false;
@@ -215,6 +222,7 @@ async function handleInput(user : user){
         } catch (e) {
             if(automatedTesting) taskManager.pushCartContents(state.crdt, "Push failed!\n");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
             console.log("Push failed.");
         }
     }
@@ -416,6 +424,7 @@ async function handleInput(user : user){
     const help_text2 : string = `Type one of the following commands:
        -"view" to view the list;
        -"add --itemQuantity --itemName" to add an item to the list or to increase its quantity;
+       -"buy --itemQuantity --itemName" to buy items from the list;
        -"del --itemName" to delete an item from the list;
        -"rem --itemQuantity --itemName" to remove an item from the list or decrease its quantity;
        -"push" to push changes from the server;
@@ -479,6 +488,14 @@ async function handleInput(user : user){
                         if(automatedTesting) {
                             taskManager.pushCartContents(user.state.crdt, "");
                         }
+                    }
+                    else if(command == "buy" && answerArrayLength >= 3){
+                        const itemQuantity : number = Number(answerArray[1])
+                        let itemName : string = answerArray[2];
+                        for(let index = 3; index < answerArrayLength; index++){
+                            itemName += " " + answerArray[index];
+                        }
+                        user.state.crdt.buy(itemName, itemQuantity);
                     }
                     else if(command == "del" && answerArrayLength >= 2){
                         let itemName : string = answerArray[1];

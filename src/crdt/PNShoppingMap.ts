@@ -84,12 +84,18 @@ class PNShoppingMap{
      */
     buy(item:string,quantity:number=1){
         let shoppingList = this.inc.get(this.clientId);
+        console.log(this.keySet);
         if(shoppingList.has(item)){
             const [notBought,bought] = shoppingList.get(item);
             shoppingList.set(item,[notBought,bought+ quantity]);
+            if(this.printAnswers)console.log("+" + quantity + " " + item + " was bought from the cart!");
+        }
+        else if(this.getAllItems().has(item)){
+            shoppingList.set(item,[0,quantity]);
+            if(this.printAnswers)console.log("+" + quantity + " " + item + " was bought from the cart!");
         }
         else{
-            console.log("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
+            if(this.printAnswers)console.log("Item not present in shopping list for buying for client:" + this.clientId + " in cart: "+this.id);
         }
         
     }
