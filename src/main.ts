@@ -118,11 +118,9 @@ async function handleInput(user : user){
                 user.states.set(id, newState);
                 user = pickShoppingList(name, user);
                 viewShoppingList(user);
-                console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
                 return user;
             }
             else{
-                console.log("Failed to fetch list " + id);
                 return user;
             }
         }
@@ -179,11 +177,8 @@ async function handleInput(user : user){
             const fetchReply = JSON.parse((await state.sock.receive()).toString());
             console.log(fetchReply.message);
             if(fetchReply.type == "fetch"){
-                console.log(fetchReply.list);
                 const incoming_crdt = PNShoppingMap.fromJSON(fetchReply.list);
-                console.log(incoming_crdt.keySet);
                 state.crdt.join(incoming_crdt);
-                console.log(state.crdt.keySet);
                 if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
                 return true;
             }
@@ -591,7 +586,9 @@ async function handleInput(user : user){
                         await push(user.state)
                     }
                     else if(command == "pull" && answerArrayLength == 1){
-                        await pull(user.name, user.state)
+                        if(await pull(user.name, user.state)){
+                            viewShoppingList(user);
+                        }
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
