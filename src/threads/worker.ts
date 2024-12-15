@@ -209,6 +209,7 @@ async function processRequests(sock: zmq.Dealer) {
           
           const confirmation = {type: "i am dead"}
           await sock.send([msg[1], "", JSON.stringify(confirmation)]);
+          cluster.worker.kill();
           break;
         case "update":
           if (contents.list === "delete") {
