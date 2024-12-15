@@ -267,7 +267,7 @@ async function processRequests(sock: zmq.Dealer) {
           break;
       }
     } catch (e) {
-      await sock.send([msg[1], "", JSON.stringify({type: "error", message: "Error in operation."})]);
+      await sock.send([msg[1], "", JSON.stringify({type: "error", message: e.message})]);
     }
 
     interval = setInterval(() => {
