@@ -201,6 +201,7 @@ async function processRequests(sock: zmq.Dealer) {
           break;
         case "update":
           const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
+          console.log(receivedList.keySet);
           if (!(contents.id in shoppingLists)) {
             shoppingLists[contents.id] = receivedList;
           }
@@ -212,6 +213,7 @@ async function processRequests(sock: zmq.Dealer) {
             type: "update",
             message: `List ${contents.id} has been updated.`
           };
+          
           
           await sock.send([msg[1], "", JSON.stringify(updateReply)]);
           break;
@@ -237,6 +239,7 @@ async function processRequests(sock: zmq.Dealer) {
             message: "List has been fetched.",
             list: list.toJSON()
           };
+          console.log(fetchReply);
           await sock.send([msg[1], "", JSON.stringify(fetchReply)]);
           break;
         default:
