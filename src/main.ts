@@ -252,7 +252,7 @@ async function handleInput(user : user){
     }
 
     async function debugMode(rl : readline.Interface, client : string, list : string){
-        const helpText = `You are in debug mode. Type one of the following:
+        const helpText = `Type one of the following:
             -"next" to go to the next message;
             -"back" to go to the previous message;
             -"jump --controlPoint" to jump to a specific control point(time of the message);
@@ -264,6 +264,8 @@ async function handleInput(user : user){
         let crdtFileContents = fs.readFileSync("./crdtLogs/" + client + ".txt", "utf-8");
         let index = -1;
         let splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
+        let splittedcrdtContents = crdtFileContents.split(/\n\s*\n/).map(entry => entry.trim());
+        let crdtIndex = 0;
         while(true){
             const answer = await createQuestion(rl, currentText);
             currentText = "";
@@ -272,51 +274,106 @@ async function handleInput(user : user){
             if(answerArrayLength > 0){
                 const command : string = answerArray[0].toLowerCase();
                 if(command == "next" && answerArrayLength == 1){
-                    index = Math.min(splittedContents.length-1, index+1);
-                    const splittedContent = splittedContents[index];
-                    console.clear();
-                    console.log(splittedContent)
-                    const splittedListContents = splittedContent.split(/[\s]+/);
-                    const time = splittedListContents[0];
+                    index = Math.min(splittedContents.length, index+1);
+                    for(index; index < splittedContents.length; index++){
+                        const splittedContent = splittedContents[index];
+                        const splittedListContents = splittedContent.split(/[\s]+/);
+                        if(splittedListContents[2] == client){
+
+                            console.clear();
+                            console.log(splittedContent)
+                            const time = splittedListContents[0];
+                            for(crdtIndex = Math.max(0, crdtIndex); crdtIndex < splittedcrdtContents.length; crdtIndex++){
+                                const splittedCrdtContent = splittedcrdtContents[crdtIndex];
+                                const splittedCrdtListContents = splittedCrdtContent.split(/[\s]+/);
+                                const crdt_time = splittedCrdtListContents[0];
+                                if(crdt_time == time){
+                                    const splittedCrdtListContentsLine = splittedCrdtContent.split(/[\n]+/);
+                                    if(splittedCrdtListContentsLine[1] != undefined){
+                                        console.log(splittedCrdtListContentsLine[1]);
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
                 }
                 else if(command == "back" && answerArrayLength == 1){
-                    index = Math.max(0, index - 1);
-                    const splittedContent = splittedContents[index];
-                    console.clear();
-                    console.log(splittedContent);
-                    const splittedListContents = splittedContent.split(/[\s]+/);
-                    const time = splittedListContents[0];
+                    index = Math.max(-1, index-1);
+                    for(index; index >= 0; index--){
+                        const splittedContent = splittedContents[index];
+                        const splittedListContents = splittedContent.split(/[\s]+/);
+                        if(splittedListContents[2] == client){
+                            console.clear();
+                            console.log(splittedContent)
+                            const time = splittedListContents[0];
+                            for(crdtIndex = Math.min(splittedcrdtContents.length-1, crdtIndex); crdtIndex >= 0; crdtIndex--){
+                                const splittedCrdtContent = splittedcrdtContents[crdtIndex];
+                                const splittedCrdtListContents = splittedCrdtContent.split(/[\s]+/);
+                                const crdt_time = splittedCrdtListContents[0];
+                                if(crdt_time == time){
+                                    const splittedCrdtListContentsLine = splittedCrdtContent.split(/[\n]+/);
+                                    if(splittedCrdtListContentsLine[1] != undefined){
+                                        console.log(splittedCrdtListContentsLine[1]);
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
 
                 }
                 else if(command == "jump" && answerArrayLength == 2){
-                    index = 0;
+                    
+                    let index_save = 0;
                     const jumpTime : string = answerArray[1];
-                    while(index < splittedContents.length){
-                        const splittedContent = splittedContents[index];
+                    while(index_save < splittedContents.length){
+                        const splittedContent = splittedContents[index_save];
                         const splittedListContents = splittedContent.split(/[\s]+/);
                         const time = splittedListContents[0];
                         if(time == jumpTime){
                             console.clear();
                             console.log(splittedContent);
+                            crdtIndex = 0;
+                            for(crdtIndex; crdtIndex < splittedcrdtContents.length; crdtIndex++){
+                                const splittedCrdtContent = splittedcrdtContents[crdtIndex];
+                                const splittedCrdtListContents = splittedCrdtContent.split(/[\s]+/);
+                                const crdt_time = splittedCrdtListContents[0];
+                                if(crdt_time == time){
+                                    const splittedCrdtListContentsLine = splittedCrdtContent.split(/[\n]+/);
+                                    if(splittedCrdtListContentsLine[1] != undefined){
+                                        console.log(splittedCrdtListContentsLine[1]);
+                                    }
+                                    break;
+                                }
+                            }
                             break;
                         }
-                        index += 1;
+                        index_save += 1;
+                    }
+                    if(index_save < splittedContents.length){
+                        index = index_save;
+                    }
+                    else{
+                        console.log("There is no jump target for " + jumpTime);
                     }
                 }
                 else if(command == "inspect" && answerArrayLength == 3){
-                    const clientName : string = answerArray[1];
-                    const listName : string = answerArray[2];
-                    if(!fs.existsSync("./listLogs/"+listName+".txt")) console.log("File does not exist in the logs");
-                    else if(!fs.existsSync("./crdtLogs/" + clientName + ".txt")) console.log("Client does not exist in the logs");
+                    client = answerArray[1];
+                    list = answerArray[2];
+                    if(!fs.existsSync("./listLogs/"+list+".txt")) console.log("File does not exist in the logs");
+                    else if(!fs.existsSync("./crdtLogs/" + client + ".txt")) console.log("Client does not exist in the logs");
                     else{
-                        fileContents = fs.readFileSync("./listLogs/" + listName + ".txt", "utf-8");
-                        crdtFileContents = fs.readFileSync("./crdtLogs/" + clientName + ".txt", "utf-8");
-                        index = 0;
+                        fileContents = fs.readFileSync("./listLogs/" + list + ".txt", "utf-8");
+                        crdtFileContents = fs.readFileSync("./crdtLogs/" + client + ".txt", "utf-8");
+                        index = -1;
+                        crdtIndex = 0;
                         splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
-                        const splittedContent = splittedContents[index];
+                        splittedcrdtContents = crdtFileContents.split(/\n\s*\n/).map(entry => entry.trim());
                         console.clear();
-                        console.log("Inspecting " + client + " on " + listName);
-                        console.log(splittedContent);
+                        console.log("Inspecting " + client + " on " + list);
                     }
                 }
                 else if(command == "help" && answerArrayLength == 1){
@@ -482,6 +539,7 @@ async function handleInput(user : user){
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text1;
+                        break;
                     }
                 }
                 case ConsoleState.LOGIN:{
@@ -541,7 +599,6 @@ async function handleInput(user : user){
                               exitedClients++;
                               console.log(exitedClients)
                               if (exitedClients === clients){
-                                console.log("finished");
                                 createLogs();
                               }
                             });
@@ -552,7 +609,15 @@ async function handleInput(user : user){
                         const listName : string = answerArray[2];
                         if(!fs.existsSync("./listLogs/" + listName + ".txt")) console.log("List does not exist in the logs");
                         else if(!fs.existsSync("./crdtLogs/" + clientName + ".txt"))console.log("Client does not exist in the logs");
-                        else await debugMode(rl, clientName, listName);
+                        else {
+                            console.log("You are in debug mode.")
+                            await debugMode(rl, clientName, listName);
+                            console.log("Exited debug mode");
+                        }
+                        
+                    }
+                    else if(command == "help" && answerArrayLength == 1){
+                        text = login_text;
                     }
                     break;
                 }
@@ -679,7 +744,6 @@ function createLogs(){
 
     const testResults : [number, number, Array<string>] = [0, 0, []];
     const availableActions : Array<string> = ["Added", "Removed", "Pulled"];
-    console.log("persisting lists");
     for(const [listID, listContents] of listLogs.entries()){
         fs.writeFileSync(basePath + "listLogs/List" + listID + ".txt", listContents,'utf8');
         const splittedContents = listContents.split(/\n\s*\n/).map(entry => entry.trim());
@@ -862,7 +926,8 @@ function createLogs(){
     }
 
     fs.writeFileSync("./generalLogs.txt", inOrderLog,'utf8')
-    console.log("persisting general");
+
+    console.log("Type \"help\" to view other commands");
     
     return testResults[2];
 }
