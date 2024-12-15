@@ -75,6 +75,7 @@ export async function manageLogin(commands : Array<string>, userName : string, n
     await pushAction(commands, "login " + user, "logged into the system");
 
     createRecipe("zucchini slice", ["egg", "flour", "zucchini", "onion", "bacon", "cheddar", "vegetable oil"], [5, 1, 4, 1, 1, 1, 1]);
+    createRecipe("easy chicken curry", ["onion", "garlic clove", "ginger", "chicken thigh", "tomato", "yogurt", "coriander", "almond"], [1, 2, 1, 6, 4, 1, 1, 1]);
 
 
 }
