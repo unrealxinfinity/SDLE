@@ -3,6 +3,7 @@ import * as zmq from "zeromq";
 import * as fs from 'fs';
 import { PNShoppingMap } from "../crdt/PNShoppingMap.js";
 import { readJsonFile } from "../utills/files.js";
+import cluster from "cluster";
 
 const backAddr = "tcp://127.0.0.1:12345";
 let hr: HashRing | null = null;
@@ -55,11 +56,11 @@ export default async function workerProcess() {
   };
   await sock.send(JSON.stringify(readyMsg));
 
-  /*setInterval(() => {
+  setInterval(() => {
     const envData = JSON.stringify({PORT: process.env.PORT, ID: process.env.ID, WORKERIDS: process.env.WORKERIDS});
     const listData = JSON.stringify(shoppingLists, null, 2);
     fs.writeFileSync(process.env.ID+'.json', JSON.stringify({listData, envData}), 'utf8')
-  }, 10000);*/
+  }, 10000);
 
   setInterval(() => {
     if (toSync.length !== 0) {
@@ -155,6 +156,8 @@ async function cacheMiss(port: number, listID: string) {
 }
 
 async function processRequests(sock: zmq.Dealer) {
+  let count = 0;
+
   let interval = setInterval(() => {
     const readyMsg = {
       type: "ready",
@@ -163,6 +166,12 @@ async function processRequests(sock: zmq.Dealer) {
   }, 5000);
 
   for await (const msg of sock) {
+    count++;
+
+    if (count > 5) {
+      cluster.worker.kill();
+    }
+
     clearInterval(interval);
     const contents = JSON.parse(msg[3].toString());
     
