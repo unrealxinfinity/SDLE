@@ -632,6 +632,7 @@ async function handleInput(user : user){
                         };
                         try{
                             await sock.send(JSON.stringify(killMsg));
+                            console.log("Worker " + workerID + " was killed");
                         }catch(e){
                             console.log("Failed to kill worker " + workerID);
                         }
@@ -646,6 +647,7 @@ async function handleInput(user : user){
                         };
                         try{
                             await sock.send(JSON.stringify(birthMsg));
+                            console.log("Worker birthed successfully");
                         }catch(e){
                             console.log("Failed to birth a worker");
                         }
