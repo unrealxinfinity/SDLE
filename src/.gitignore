@@ -1,8 +1,8 @@
 node_modules/
 out/
-clientLogs/*
-listLogs/*
-crdtLogs/*
+clientLogs/*.txt
+listLogs/*.txt
+crdtLogs/*.txt
 generalLogs.txt
 localStorage/*.json
 serverStorage/*.json
