@@ -4,7 +4,7 @@
         "create hello",
         "add 1 grape",
         "add 3 potato",
-        "rem potato",
+        "del potato",
         "view",
         "push",
         "close"

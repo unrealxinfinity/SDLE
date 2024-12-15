@@ -31,9 +31,9 @@ function sleep(ms : number) : Promise<void>{
 async function pushAction(commands : Array<string>, action : string, description : string){
     
     commands.push(action);
+    await sleep(Math.random()*1000);
     const time = new Date().getTime();
     actions.push(time + " Action: " + user + " " + description + "\n");
-    await sleep(Math.random()*1000);
 
 }
 

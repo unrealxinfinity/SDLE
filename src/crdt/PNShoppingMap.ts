@@ -89,7 +89,7 @@ class PNShoppingMap{
             shoppingList.set(item,[notBought,bought+ quantity]);
         }
         else{
-            throw new Error("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
+            console.log("Item not present in shopping list for buying for client:" + this.clientId + "in cart: "+this.id);
         }
         
     }
