@@ -311,12 +311,17 @@ async function workerComms(listReceiver: zmq.Reply) {
             const toTransfer = {};
             const newNode = {};
             newNode[msg.id]= {vnodes: 5};
+            const newNode2 = {};
+            newNode[process.env.ID]= {vnodes: 5};
             const localHr = buildHashRing(JSON.parse(process.env.WORKERIDS));
             localHr.add(newNode);
+            localHr.add(newNode2);
             for (const list in shoppingLists) {
               const owners = localHr.range(list, 3);
               if (owners.includes(msg.id)) {
                 toTransfer[list] = shoppingLists[list];
+              }
+              if (!owners.includes(process.env.ID)) {
                 delete shoppingLists[list];
               }
             }
