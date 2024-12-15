@@ -71,11 +71,6 @@ function readFromLocalStorage(userName : string | null){
     }
 }
 
-function generateGUId() : string {
-    return uuidv4();
-}
-
-
 function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
     return new Promise((resolve) => {
         rl.question(text, (answer) => {
@@ -121,11 +116,9 @@ async function handleInput(user : user){
                 user.states.set(id, newState);
                 user = pickShoppingList(name, user);
                 viewShoppingList(user);
-                console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
                 return user;
             }
             else{
-                console.log("Failed to fetch list " + id);
                 return user;
             }
         }
@@ -148,7 +141,7 @@ async function handleInput(user : user){
 
     function createShoppingList(name : string, user : user){
         if(!user.states.has(name)){
-            let id = generateGUId();
+            let id = uuidv4();
             if(automatedTesting)id = id = user.name.slice(6);
             const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: null}
             user.lists.set(name, id);
@@ -182,11 +175,8 @@ async function handleInput(user : user){
             const fetchReply = JSON.parse((await state.sock.receive()).toString());
             console.log(fetchReply.message);
             if(fetchReply.type == "fetch"){
-                console.log(fetchReply.list);
                 const incoming_crdt = PNShoppingMap.fromJSON(fetchReply.list);
-                console.log(incoming_crdt.keySet);
                 state.crdt.join(incoming_crdt);
-                console.log(state.crdt.keySet);
                 if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
                 return true;
             }
@@ -395,6 +385,69 @@ async function handleInput(user : user){
     
     }
 
+    function leaveList(listname : string, user : user){
+        if(user.lists != null){
+            if(user.lists.has(listname)){
+                const listID = user.lists.get(listname);
+                if(user.state.shoppingListId != null){
+                    if(user.state.shoppingListId == listID){
+                        user.consoleState = ConsoleState.START;
+                    }
+                }
+                if(user.states.has(listID)){
+                    const state = user.states.get(listID);
+                    if(state != null && state.sock != null) state.sock.close();
+                    user.states.delete(listID);
+                }
+                user.lists.delete(listname);
+                console.log("Left list " + listname + " with id: " + listID);
+                return true;
+            }
+        }
+        console.log("User doesn't have list " + listname);
+        return false;
+    }
+
+    async function deleteList(listname : string, user : user){
+        let sock = null;
+        if(user.state == null || (user.state != null && user.state.sock == null)){
+            sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            sock.connect(frontAddr);
+        }
+        else{
+            sock = user.state.sock;
+        }
+
+        if(user.lists != null && user.lists.has(listname)){
+            const listID : string = user.lists.get(listname);
+
+            const updateMsg = {
+                type: "update",
+                id: listID.toString(),
+                list: "delete"
+            };
+    
+            try{
+                const updateRequest = await sock.send(JSON.stringify(updateMsg));
+                const updateReply = JSON.parse((await sock.receive()).toString());
+                console.log(updateReply.message);
+            }catch(e){
+                if(user.state != null){
+                    sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+                    sock.connect(frontAddr);
+                }
+                console.log("Couldn't delete list " + listname);
+            }
+            if(user.state != null) user.state.sock = sock;
+            else sock.close();
+        }
+
+    
+        if(leaveList(listname, user)){
+
+        }
+    }
+
     
 
 
@@ -412,6 +465,8 @@ async function handleInput(user : user){
        -"list" to list the shopping lists you are a part of;
        -"fetch --id --name" to fetch a shopping list;
        -"create --listname" to create a new shopping list;
+       -"leave --listname" to leave a shopping list;
+       -"delete --listname to delete a shopping list from everyone;
        -"pick --listname" to pick a shopping list;
        -"login --name" to login to another user account;
        -"test --filePath" to run a custom test;
@@ -431,6 +486,8 @@ async function handleInput(user : user){
        -"list" to list the shopping lists you are a part of;
        -"fetch --id --name" to fetch a shopping list;
        -"create --listname" to create a new shopping list;
+       -"leave --listname" to leave a shopping list;
+       -"delete --listname to delete a shopping list from everyone;
        -"pick --listname" to pick a shopping list;
        -"login --name" to login to another user account;
        -"test --filePath" to run a custom test;
@@ -527,7 +584,9 @@ async function handleInput(user : user){
                         await push(user.state)
                     }
                     else if(command == "pull" && answerArrayLength == 1){
-                        await pull(user.name, user.state)
+                        if(await pull(user.name, user.state)){
+                            viewShoppingList(user);
+                        }
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text2;
@@ -555,6 +614,14 @@ async function handleInput(user : user){
                         if(automatedTesting) taskManager.pushAnswer("Picked list Successfully!", "");
                         viewShoppingList(user);
                         text = initial_text;
+                    }
+                    else if(command == "leave" && answerArrayLength == 2){
+                        const listname : string = answerArray[1];
+                        leaveList(listname, user)
+                    }
+                    else if(command == "delete" && answerArrayLength == 2){
+                        const listname : string = answerArray[1];
+                        deleteList(listname, user);
                     }
                     else if(command == "help" && answerArrayLength == 1){
                         text = help_text1;
