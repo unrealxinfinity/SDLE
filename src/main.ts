@@ -188,6 +188,7 @@ async function handleInput(user : user){
         } catch (e) {
             console.log("Pull failed.");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
         }
         if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled", "");
         return false;
@@ -215,6 +216,7 @@ async function handleInput(user : user){
         } catch (e) {
             if(automatedTesting) taskManager.pushCartContents(state.crdt, "Push failed!\n");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
+            state.sock.connect(frontAddr);
             console.log("Push failed.");
         }
     }
