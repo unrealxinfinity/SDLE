@@ -33,14 +33,12 @@ const users : Map<string, user> = new Map();
 const frontAddr = "tcp://127.0.0.1:12346";
 
 
-zmq.context.blocky = false;
 
-const clients = 2;
-const num_of_lists = 2;
-const testingTime = 12;
+let clients = 10;
+let num_of_lists = 3;
+let testingTime = 20;
 let automatedTesting = false;
-let persist = false;
-const debug : [string, string] | null = null;//["1734145739107", "./listLogs/List2.txt"];
+let persist = true;
 
 
 
@@ -54,33 +52,21 @@ function readFromLocalStorage(userName : string | null){
         for(const shoppingListId in localStorageContents){
             if(shoppingListId == "name") break;
             const shoppingListContents = localStorageContents[shoppingListId];
-            const crdt = new PNShoppingMap(userName, shoppingListId);
             user.lists.set(shoppingListContents["listName"], shoppingListId);
             
-            for(const userID in shoppingListContents["inc"]){
-                for(const itemName in shoppingListContents["inc"][userID]){
-                    const [quantity, quantityBought] = shoppingListContents["inc"][userID][itemName]
-                    crdt.addInc(userName, itemName, quantity, quantityBought);
-                }
-            }
-            for(const userID in shoppingListContents["dec"]){
-                for(const itemName in shoppingListContents["dec"][userID]){
-                    const [quantity, quantityBought] = shoppingListContents["dec"][userID][itemName]
-                    crdt.addDec(userName, itemName, quantity, quantityBought);
-                }
-            }
+            const crdt = PNShoppingMap.fromJSON(shoppingListContents["crdt"], user.name, shoppingListId);
             const state : state = {shoppingListId: shoppingListId, crdt: crdt, sock: null}; 
             user.state = state;
             user.states.set(shoppingListId, state);
             users.set(userName, user);
         }
-        if(automatedTesting) taskManager.pushAnswer("Login was successfull, loaded data from localStorage");
+        if(automatedTesting) taskManager.pushAnswer("Login was successfull, loaded data from localStorage", "");
     }
     else if(automatedTesting && !users.has(userName)){
-        taskManager.pushAnswer("Login was successfull, started a new user");
+        taskManager.pushAnswer("Login was successfull, started a new user", "");
     }
     else if(automatedTesting){
-        taskManager.pushAnswer("Login was successfull");
+        taskManager.pushAnswer("Login was successfull", "");
     }
 }
 
@@ -91,23 +77,28 @@ function generateGUId() : string {
 }
 
 
+function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
+    return new Promise((resolve) => {
+        rl.question(text, (answer) => {
+            resolve(answer);
+        });
+    });
+}
 
 async function handleInput(user : user){
 
-
-    function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
-        return new Promise((resolve) => {
-            rl.question(text, (answer) => {
-                resolve(answer);
-            });
-        });
-    }
-    
-    function viewShoppingList(state : state){
-        console.log("                SHOPPING LIST              \n");
+    function viewShoppingList(user : user){
+        let listName = null;
+        for(const [name, listID] of user.lists.entries()){
+            if(listID == user.state.shoppingListId){
+                listName = name;
+                break;
+            }
+        }
+        console.log("                SHOPPING LIST("+listName+")               \n");
         
-        for(const itemName of state.crdt.getAllItems()){
-            const quantity = state.crdt.calcTotal(itemName);
+        for(const itemName of user.state.crdt.getAllItems()){
+            const quantity = user.state.crdt.calcTotal(itemName);
             if(quantity > 0) console.log("   - " + quantity + "x " + itemName + ";");
         }
     
@@ -127,7 +118,7 @@ async function handleInput(user : user){
                 user.lists.set(name, id);
                 user.states.set(id, newState);
                 user = pickShoppingList(name, user);
-                viewShoppingList(user.state);
+                viewShoppingList(user);
                 console.log("Successfully fetched shopping list " + name + " with id = " + id + '\n');
                 return user;
             }
@@ -162,11 +153,11 @@ async function handleInput(user : user){
             user.states.set(id, newState);
             user = pickShoppingList(name, user);
             console.log("Successfully created shopping list " + name + " with id = " + id + '\n');
-            if(automatedTesting) taskManager.pushAnswer("Successfully created shopping list " + id);
+            if(automatedTesting) taskManager.pushAnswer("Successfully created shopping list " + id, user.state.crdt.toJSON());
         }
         else{
             console.log("The list with that name already exists. I'm sorry\n");
-            if(automatedTesting) taskManager.pushAnswer("Unsuccessfully created shopping list");
+            if(automatedTesting) taskManager.pushAnswer("Unsuccessfully created shopping list", user.state.crdt.toJSON());
         }
 
         return user;
@@ -184,15 +175,12 @@ async function handleInput(user : user){
             id: state.shoppingListId.toString()
         };
 
-    
-        const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
         try {
+            const fetchRequest = await state.sock.send(JSON.stringify(fetchMsg));
             const fetchReply = JSON.parse((await state.sock.receive()).toString());
             console.log(fetchReply.message);
-            console.log(fetchReply);
             if(fetchReply.type == "fetch"){
                 const incoming_crdt = PNShoppingMap.fromJSON(fetchReply.list);
-                console.log(incoming_crdt);
                 state.crdt.join(incoming_crdt);
                 if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
                 return true;
@@ -200,9 +188,8 @@ async function handleInput(user : user){
         } catch (e) {
             console.log("Pull failed.");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
-            state.sock.connect(frontAddr);
-            if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled");
         }
+        if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled", "");
         return false;
     }
 
@@ -217,20 +204,17 @@ async function handleInput(user : user){
             list: state.crdt.toJSON()
         };
 
-        console.log(state.crdt);
-        console.log(state.crdt.toJSON());
-        console.log(PNShoppingMap.fromJSON(state.crdt.toJSON()))
         
-        const updateRequest = await state.sock.send(JSON.stringify(updateMsg));
     
         try {
+            const updateRequest = await state.sock.send(JSON.stringify(updateMsg));
             const updateReply = JSON.parse((await state.sock.receive()).toString());
 
             console.log(updateReply.message);
-        } catch (e) {
             if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pushed!\n");
+        } catch (e) {
+            if(automatedTesting) taskManager.pushCartContents(state.crdt, "Push failed!\n");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
-            state.sock.connect(frontAddr);
             console.log("Push failed.");
         }
     }
@@ -242,53 +226,121 @@ async function handleInput(user : user){
                 for(const user of users.values()){
                     const data = {}
                     for(const state of user.states.values()){
-    
-                    const crdt_json = JSON.parse(state.crdt.toJSON());
 
-    
-                    let listName = "";
-                        for(const [name, id] of user.lists){
-                        if(id == state.shoppingListId){
-                            listName = name;
+                        let listName = "";
+                            for(const [name, id] of user.lists.entries()){
+                            if(id == state.shoppingListId){
+                                listName = name;
+                            }
                         }
+        
+                        data[state.shoppingListId] = {
+                            "listName": listName,
+                            "crdt": state.crdt.toJSON()
+                        };   
+    
                     }
-    
-                    data[state.shoppingListId] = {
-                        "listName": listName,
-                        "inc": crdt_json.inc,
-                        "dec": crdt_json.dec
-                    };   
-    
-                }
-                try{
-                    fs.writeFileSync('localStorage/'+user.name+'.json', JSON.stringify(data, null, 2), 'utf8')
-                } catch(error){
-                    console.log("Couldn't write to file");
-                }
+                    try{
+                        fs.writeFileSync('localStorage/'+user.name+'.json', JSON.stringify(data, null, 2), 'utf8')
+                    } catch(error){
+                        console.log("Couldn't write to file");
+                    }
                 }
                 persist = true;
             }
         }, 10)
     }
 
-    function jumpToCommand(commands : Array<string>){
-        /*const debugPoint = debug[0];
-        const filePath = debug[1];
-        const fileContents = fs.readFileSync(filePath, 'utf-8');
+    async function debugMode(rl : readline.Interface, client : string, list : string){
+        const helpText = `You are in debug mode. Type one of the following:
+            -"next" to go to the next message;
+            -"back" to go to the previous message;
+            -"jump --controlPoint" to jump to a specific control point(time of the message);
+            -"inspect --clientName --listName" to inspect the client activity in the list;
+            -"help" to display the help text;
+            -"exit" to leave debug mode;\n`;
+        let currentText = helpText;
+        let fileContents = fs.readFileSync("./listLogs/" + list + ".txt", "utf-8");
+        let crdtFileContents = fs.readFileSync("./crdtLogs/" + client + ".txt", "utf-8");
+        let index = -1;
+        let splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
+        while(true){
+            const answer = await createQuestion(rl, currentText);
+            currentText = "";
+            const answerArray : Array<string> = answer.split(" ");
+            const answerArrayLength = answerArray.length;
+            if(answerArrayLength > 0){
+                const command : string = answerArray[0].toLowerCase();
+                if(command == "next" && answerArrayLength == 1){
+                    index = Math.min(splittedContents.length-1, index+1);
+                    const splittedContent = splittedContents[index];
+                    console.clear();
+                    console.log(splittedContent)
+                    const splittedListContents = splittedContent.split(/[\s]+/);
+                    const time = splittedListContents[0];
+                }
+                else if(command == "back" && answerArrayLength == 1){
+                    index = Math.max(0, index - 1);
+                    const splittedContent = splittedContents[index];
+                    console.clear();
+                    console.log(splittedContent);
+                    const splittedListContents = splittedContent.split(/[\s]+/);
+                    const time = splittedListContents[0];
 
-        const splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
-        for(const splittedContent of splittedContents){
-            const splittedListContents = splittedContent.split(/[\s]+/);
-            const splittedListContentsLines = splittedContent.split(/[\n]+/);
-            if(splittedListContents[4])
-        }*/
-
+                }
+                else if(command == "jump" && answerArrayLength == 2){
+                    index = 0;
+                    const jumpTime : string = answerArray[1];
+                    while(index < splittedContents.length){
+                        const splittedContent = splittedContents[index];
+                        const splittedListContents = splittedContent.split(/[\s]+/);
+                        const time = splittedListContents[0];
+                        if(time == jumpTime){
+                            console.clear();
+                            console.log(splittedContent);
+                            break;
+                        }
+                        index += 1;
+                    }
+                }
+                else if(command == "inspect" && answerArrayLength == 3){
+                    const clientName : string = answerArray[1];
+                    const listName : string = answerArray[2];
+                    if(!fs.existsSync("./listLogs/"+listName+".txt")) console.log("File does not exist in the logs");
+                    else if(!fs.existsSync("./crdtLogs/" + clientName + ".txt")) console.log("Client does not exist in the logs");
+                    else{
+                        fileContents = fs.readFileSync("./listLogs/" + listName + ".txt", "utf-8");
+                        crdtFileContents = fs.readFileSync("./crdtLogs/" + clientName + ".txt", "utf-8");
+                        index = 0;
+                        splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
+                        const splittedContent = splittedContents[index];
+                        console.clear();
+                        console.log("Inspecting " + client + " on " + listName);
+                        console.log(splittedContent);
+                    }
+                }
+                else if(command == "help" && answerArrayLength == 1){
+                    currentText = helpText;
+                }
+                else if(command == "exit" && answerArrayLength == 1){
+                    break;
+                }
+            }
+            
+        }
+    
     }
 
     
 
 
-    const login_text : string = `Type "login --name" to login to user account\n`;
+    const login_text : string = `Type one of the following commands:
+       -"login --name" to login to another user account;
+       -"test --filePath" to run a custom test;
+       -"test --clients --lists --time" to run automatic tests with varrying number of clients, lists and time duration(seconds);
+       -"debug --clientName --listName" to enter debug mode on a client in a list;
+       -"close" to exit the program;\n\n`;
+
     const initial_text : string = `Type "help" to view the commands\n`;
 
     const help_text1 : string = `Type one of the following commands:
@@ -297,6 +349,9 @@ async function handleInput(user : user){
        -"create --listname" to create a new shopping list;
        -"pick --listname" to pick a shopping list;
        -"login --name" to login to another user account;
+       -"test --filePath" to run a custom test;
+       -"test --clients --lists --time" to run automatic tests with varrying number of clients, lists and time duration(seconds);
+       -"debug --clientName --listName" to enter debug mode on a client in a list;
        -"close" to exit the program;\n\n`;
 
     const help_text2 : string = `Type one of the following commands:
@@ -311,18 +366,20 @@ async function handleInput(user : user){
        -"create --listname" to create a new shopping list;
        -"pick --listname" to pick a shopping list;
        -"login --name" to login to another user account;
+       -"test --filePath" to run a custom test;
+       -"test --clients --lists --time" to run automatic tests with varrying number of clients, lists and time duration(seconds);
+       -"debug --clientName --listName" to enter debug mode on a client in a list;
        -"close" to exit the program;\n\n`;
 
 
     let persistingDataInterval = null;
 
     let text : string = login_text;
-    let userName : string = null;
     let rl : readline.Interface = null;
 
     
-    const commands : Array<string> = []//readJsonFile('./test').commands;
-    if(debug !== null) jumpToCommand(commands);
+    let commands : Array<string> = []//readJsonFile('./test').commands;
+
 
     while(true){
         if(automatedTesting && user.consoleState == ConsoleState.LOGIN && commands.length == 0) await taskManager.manageLogin(commands, process.env.USERNAME, num_of_lists, testingTime);
@@ -350,7 +407,7 @@ async function handleInput(user : user){
             switch(user.consoleState){
                 case ConsoleState.SHOPPING_LIST:{
                     if(command == "view" && answerArrayLength == 1){
-                        viewShoppingList(user.state);
+                        viewShoppingList(user);
                     }
                     else if(command == "add" && answerArrayLength >= 3){
                         const itemQuantity : number = Number(answerArray[1])
@@ -383,8 +440,9 @@ async function handleInput(user : user){
                         }
                         const allItems = user.state.crdt.getAllItems();
                         if(allItems.has(itemName)){
-                            user.state.crdt.remove(itemName, itemQuantity);
-                        if(automatedTesting) {
+                            const totalQuant = user.state.crdt.calcTotal(itemName);
+                            user.state.crdt.remove(itemName, Math.min(itemQuantity, totalQuant));
+                            if(automatedTesting) {
                                 taskManager.pushCartContents(user.state.crdt, "");
                             }
                         }
@@ -418,8 +476,8 @@ async function handleInput(user : user){
                     else if(command == "pick" && answerArrayLength == 2){
                         const listName : string = answerArray[1];
                         user = pickShoppingList(listName, user);
-                        if(automatedTesting) taskManager.pushAnswer("Picked list Successfully!");
-                        viewShoppingList(user.state);
+                        if(automatedTesting) taskManager.pushAnswer("Picked list Successfully!", "");
+                        viewShoppingList(user);
                         text = initial_text;
                     }
                     else if(command == "help" && answerArrayLength == 1){
@@ -432,11 +490,69 @@ async function handleInput(user : user){
                         readFromLocalStorage(userName);
                         if(persistingDataInterval == null) persistingDataInterval = persistLocalStorage();
                         text = initial_text;
-                        if(users.has(userName)) user = users.get(userName);
+                        if(users.has(userName)) {
+                            user = users.get(userName);
+                            console.log("Successfully logged in as " + userName);
+                        }
                         else{
                             user = {name: userName, state: {shoppingListId: "", crdt: null, sock: null}, states: new Map(), lists: new Map(), consoleState: ConsoleState.START};
                             users.set(userName, user);
+                            console.log("Successfully created a new user called " + userName);
                         }            
+                    }
+                    else if(command == "test" && answerArrayLength == 2){
+                        const filePath : string = answerArray[1];
+                        if(fs.existsSync(filePath)){
+                            if(filePath.length > 5 && filePath.slice(filePath.length-5) == ".json"){
+                                const fileContents = readJsonFile(filePath.slice(0, filePath.length-5));
+                                if(fileContents.commands != undefined) commands = [...commands, ...fileContents.commands]
+                                else console.log("There is no commands object in the file");
+                            }
+                            else{
+                                console.log("The file doesn't have .json extension");
+                            }
+                        }
+                        else{
+                            console.log("Incorrect file Path, or file does not exist");
+                        }
+                    }
+                    else if(command == "test" && answerArrayLength == 4){
+                        console.log("Running automatic tests...");
+                        clients = Number(answerArray[1]);
+                        num_of_lists = Number(answerArray[2]);
+                        testingTime = Number(answerArray[3]);
+                        if(clients <= 0) console.log("Clients must be a positive number");
+                        else if(num_of_lists <= 0) console.log("Lists must be a positive number");
+                        else if(testingTime <= 0) console.log("time duration must be a positive number");
+                        else if(num_of_lists > clients) console.log("Lists can't be higher than the the number of clients");
+                        else {
+                            for(let client = 1; client <= clients; client++){
+                                cluster.fork({
+                                    USERNAME: "Client"+client,
+                                    CLIENTS: clients,
+                                    NUMLISTS: num_of_lists,
+                                    DURATION: testingTime
+                                });
+                            }
+                        
+                            var exitedClients = 0;
+      
+                            cluster.on("disconnect", function (worker) {
+                              exitedClients++;
+                              console.log(exitedClients)
+                              if (exitedClients === clients){
+                                console.log("finished");
+                                createLogs();
+                              }
+                            });
+                        }
+                    }
+                    else if(command == "debug" && answerArrayLength == 3){
+                        const clientName : string = answerArray[1];
+                        const listName : string = answerArray[2];
+                        if(!fs.existsSync("./listLogs/" + listName + ".txt")) console.log("List does not exist in the logs");
+                        else if(!fs.existsSync("./crdtLogs/" + clientName + ".txt"))console.log("Client does not exist in the logs");
+                        else await debugMode(rl, clientName, listName);
                     }
                     break;
                 }
@@ -446,7 +562,7 @@ async function handleInput(user : user){
 
             }
             if(command == "close" && answerArrayLength == 1){
-                if(automatedTesting) taskManager.pushAnswer("Successfully closed the System");
+                if(automatedTesting) taskManager.pushAnswer("Successfully closed the System", user.state.crdt.toJSON());
                 break;
             }
         }
@@ -460,9 +576,11 @@ async function handleInput(user : user){
         }, 11);
     }
 
-    for(const userState of user.states.values()){
-        if(userState.sock != null){
-            userState.sock.close();
+    for(const user_ of users.values()){
+        for(const userState of user_.states.values()){
+            if(userState.sock != null){
+                userState.sock.close();
+            }
         }
     }
 
@@ -491,10 +609,10 @@ function createLogs(){
     }
 
     function pull(clientProducts : [Map<string, number>, Map<string, number>, number], changes : Array<[string, Map<string, number>]>, client : string){
-        for(let i = clientProducts[2]; i < changes.length; i++){
-            const [changeClient, change] = changes[i];
+        for(let index = clientProducts[2]; index < changes.length; index++){
+            const [changeClient, change] = changes[index];
             if(changeClient != client){
-                for(const [itemName, changedQuantity] of change){
+                for(const [itemName, changedQuantity] of change.entries()){
                     if(clientProducts[0].has(itemName)){
                         const currentQuantity = clientProducts[0].get(itemName);
                         clientProducts[0].set(itemName, currentQuantity+changedQuantity);
@@ -505,14 +623,16 @@ function createLogs(){
                 }
             }
         }
+
         clientProducts[2] = changes.length;
+
     }
 
     const timeline : Array<number> = [];
     const contents : Map<number, Array<string>> = new Map();
-
+    const basePath : string = "./"
     for(let client = 1; client <= clients; client++){
-        const fileContent = fs.readFileSync("./clientLogs/Client" + client + ".txt", 'utf-8');
+        const fileContent = fs.readFileSync(basePath + "clientLogs/Client" + client + ".txt", 'utf-8');
         const splittedContent = fileContent.split(/\n\s*\n/).map(entry => entry.trim());
         for(const content of splittedContent){
             const match = content.match(/^(\d+)\s+Action:/);
@@ -526,8 +646,8 @@ function createLogs(){
                 }
                 else{
                     contents.set(time, [content]);
+                    timeline.push(time);
                 }
-                timeline.push(time);
             }
         }
     }
@@ -559,9 +679,9 @@ function createLogs(){
 
     const testResults : [number, number, Array<string>] = [0, 0, []];
     const availableActions : Array<string> = ["Added", "Removed", "Pulled"];
-    
-    for(const [listID, listContents] of listLogs){
-        fs.writeFileSync("./listLogs/List" + listID + ".txt", listContents,'utf8');
+    console.log("persisting lists");
+    for(const [listID, listContents] of listLogs.entries()){
+        fs.writeFileSync(basePath + "listLogs/List" + listID + ".txt", listContents,'utf8');
         const splittedContents = listContents.split(/\n\s*\n/).map(entry => entry.trim());
         const clientProducts : Map<string, [Map<string, number>, Map<string, number>, number]>= new Map();
         const serverProducts : Map<string, number> = new Map();
@@ -605,8 +725,9 @@ function createLogs(){
                     prevClientProducts[1].set(itemName, quantity);
                 }
 
+
                 const resultedProducts = createList(splittedListContentsLines, 1);
-                for(const [prodName, prodQuant] of resultedProducts){
+                for(const [prodName, prodQuant] of resultedProducts.entries()){
                     if(!prevClientProducts[0].has(prodName)) {
                         passedTest = false;
                         break;
@@ -618,7 +739,16 @@ function createLogs(){
                     }
 
                 }
+                if(passedTest){
+                    for(const [prodName, prodQuant] of prevClientProducts[0].entries()){
+                        if(!resultedProducts.has(prodName)){
+                            passedTest = false;
+                            break;
+                        }
+                    }
+                }
                 prevClientProducts[0] = structuredClone(resultedProducts);
+
             }
             else if(action == "Removed"){
                 const quantity = Number(splittedListContents[4].slice(0, splittedListContents[4].length-1));
@@ -645,7 +775,7 @@ function createLogs(){
                 }
 
                 const resultedProducts = createList(splittedListContentsLines, 1);
-                for(const [prodName, prodQuant] of resultedProducts){
+                for(const [prodName, prodQuant] of resultedProducts.entries()){
                     if(!prevClientProducts[0].has(prodName)) {
                         passedTest = false;
                         break;
@@ -655,12 +785,19 @@ function createLogs(){
                         passedTest = false;
                         break;
                     }
-
+                }
+                if(passedTest){
+                    for(const [prodName, prodQuant] of prevClientProducts[0].entries()){
+                        if(!resultedProducts.has(prodName)){
+                            passedTest = false;
+                            break;
+                        }
+                    }
                 }
                 prevClientProducts[0] = structuredClone(resultedProducts);
             }
             else if(action == "Pushed"){
-                for(const [itemName, quantity] of prevClientProducts[1]){
+                for(const [itemName, quantity] of prevClientProducts[1].entries()){
                     if(serverProducts.has(itemName)){
                         const serverProductQuantity = serverProducts.get(itemName);
                         const offset = quantity+serverProductQuantity;
@@ -681,10 +818,9 @@ function createLogs(){
                 prevClientProducts[1].clear();
             }
             else if(action == "Pulled"){
-                pull(prevClientProducts, changes, client)
-
                 const pulledProducts = createList(splittedListContentsLines, 2);
-                for(const [prodName, prodQuant] of pulledProducts){
+                pull(prevClientProducts, changes, client)
+                for(const [prodName, prodQuant] of pulledProducts.entries()){
                     if(!prevClientProducts[0].has(prodName)) {
                         passedTest = false;
                         break;
@@ -696,7 +832,16 @@ function createLogs(){
                     }
 
                 }
+                if(passedTest){
+                    for(const [prodName, prodQuant] of prevClientProducts[0].entries()){
+                        if(!pulledProducts.has(prodName)){
+                            passedTest = false;
+                            break;
+                        }
+                    }
+                }
                 prevClientProducts[0] = structuredClone(pulledProducts);
+
             }
 
             if(availableActions.includes(action)){
@@ -717,42 +862,30 @@ function createLogs(){
     }
 
     fs.writeFileSync("./generalLogs.txt", inOrderLog,'utf8')
+    console.log("persisting general");
     
-
+    return testResults[2];
 }
 
 
-if(debug !== null) automatedTesting = false;
-
-if(cluster.isPrimary && automatedTesting){
-    for(let client = 1; client <= clients; client++){
-        cluster.fork({
-            USERNAME: "Client"+client,
-        });
-    }
-
-    var exitedClients = 0;
 
 
 
-    cluster.on("disconnect", function (worker) {
-      exitedClients++;
-      console.log(exitedClients)
-      if (exitedClients === clients){
-        console.log("finished");
-        createLogs();
-        process.exit(0);
-      }
-    });
+
+if(!cluster.isPrimary){
+    automatedTesting = true;
+    persist = false;
+    clients = Number(process.env.CLIENTS);
+    num_of_lists = Number(process.env.NUMLISTS);
+    testingTime = Number(process.env.DURATION);
 }
-else{
-    let user : user = {name: null, state: null, states: null, lists: null, consoleState: ConsoleState.LOGIN};
 
-    await handleInput(user);
-    if(automatedTesting) {
-        taskManager.writeLog();
-        process.disconnect();
-    }
+let user : user = {name: null, state: null, states: null, lists: null, consoleState: ConsoleState.LOGIN};
+
+await handleInput(user);
+if(automatedTesting) {
+    taskManager.writeLog();
+    process.disconnect();
 }
 
 

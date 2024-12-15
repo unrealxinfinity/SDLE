@@ -1,2 +1,6 @@
 node_modules/
 out/
+clientLogs/*
+crdtLogs/*
+generalLogs.txt
+localStorage/*

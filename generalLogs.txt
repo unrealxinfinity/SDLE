@@ -1,0 +1,2222 @@
+1734213518735 Action: Client2 logged into the system
+Login was successfull, started a new user
+
+1734213518772 Action: Client1 logged into the system
+Login was successfull, started a new user
+
+1734213518829 Action: Client3 logged into the system
+Login was successfull, started a new user
+
+1734213518900 Action: Client4 logged into the system
+Login was successfull, started a new user
+
+1734213518900 Action: Client7 logged into the system
+Login was successfull, started a new user
+
+1734213518907 Action: Client10 logged into the system
+Login was successfull, started a new user
+
+1734213518912 Action: Client6 logged into the system
+Login was successfull, started a new user
+
+1734213518919 Action: Client9 logged into the system
+Login was successfull, started a new user
+
+1734213518922 Action: Client8 logged into the system
+Login was successfull, started a new user
+
+1734213518936 Action: Client5 logged into the system
+Login was successfull, started a new user
+
+1734213518981 Action: Client3 Created list 3
+Successfully created shopping list 3
+
+1734213519103 Action: Client3 Pushed list 3
+Successfully pushed!
+
+1734213519168 Action: Client1 Created list 1
+Successfully created shopping list 1
+
+1734213519168 Action: Client9 Fetched list 3
+Successfully pulled!
+
+1734213519340 Action: Client4 Fetched list 3
+Successfully pulled!
+
+1734213519355 Action: Client8 Fetched list 3
+Successfully pulled!
+
+1734213519482 Action: Client10 Fetched list 3
+Successfully pulled!
+
+1734213519637 Action: Client7 Fetched list 1
+Successfully pulled!
+
+1734213519653 Action: Client2 Created list 2
+Successfully created shopping list 2
+
+1734213519667 Action: Client1 Pushed list 1
+Successfully pushed!
+
+1734213519792 Action: Client5 Fetched list 3
+Successfully pulled!
+
+1734213519793 Action: Client6 Fetched list 2
+Unsucessfully pulled
+
+1734213519853 Action: Client1 Pulled list 1
+Successfully pulled!
+
+1734213520001 Action: Client1 Fetched list 2
+Unsucessfully pulled
+
+1734213520043 Action: Client2 Pushed list 2
+Successfully pushed!
+
+1734213520061 Action: Client3 Fetched list 2
+Unsucessfully pulled
+
+1734213520086 Action: Client9 Added 1x cheddar to list 3
+1x cheddar
+
+1734213520113 Action: Client10 Fetched list 2
+Successfully pulled!
+
+1734213520245 Action: Client7 Pushed list 1
+Successfully pushed!
+
+1734213520265 Action: Client4 Fetched list 2
+Unsucessfully pulled
+
+1734213520319 Action: Client7 Pulled list 1
+Successfully pulled!
+
+1734213520325 Action: Client1 Pulled list 1
+Successfully pulled!
+
+1734213520335 Action: Client3 Pulled list 3
+Successfully pulled!
+
+1734213520370 Action: Client8 Pushed list 3
+Successfully pushed!
+
+1734213520393 Action: Client5 Fetched list 2
+Successfully pulled!
+
+1734213520563 Action: Client6 Fetched list 1
+Successfully pulled!
+
+1734213520754 Action: Client3 Fetched list 2
+Successfully pulled!
+
+1734213520763 Action: Client4 Pulled list 3
+Successfully pulled!
+
+1734213520791 Action: Client8 Added 1x zucchini to list 3
+1x zucchini
+
+1734213520806 Action: Client9 Fetched list 2
+Successfully pulled!
+
+1734213520831 Action: Client2 Fetched list 3
+Successfully pulled!
+
+1734213520837 Action: Client10 Pulled list 2
+Successfully pulled!
+
+1734213520905 Action: Client4 Fetched list 1
+Successfully pulled!
+
+1734213520953 Action: Client2 Added 1x onion to list 3
+1x onion
+
+1734213520983 Action: Client7 Fetched list 3
+Successfully pulled!
+
+1734213521102 Action: Client6 Fetched list 2
+Successfully pulled!
+
+1734213521143 Action: Client6 Pulled list 2
+Successfully pulled!
+
+1734213521203 Action: Client7 Pulled list 3
+Successfully pulled!
+
+1734213521237 Action: Client5 Pulled list 2
+Successfully pulled!
+
+1734213521250 Action: Client1 Fetched list 2
+Successfully pulled!
+
+1734213521338 Action: Client2 Pulled list 3
+Successfully pulled!
+1x onion
+
+1734213521344 Action: Client5 Added 1x vegetable oil to list 2
+1x vegetable oil
+
+1734213521517 Action: Client10 Added 1x zucchini to list 2
+1x zucchini
+
+1734213521539 Action: Client8 Pulled list 3
+Successfully pulled!
+1x zucchini
+
+1734213521590 Action: Client6 Added 1x bacon to list 2
+1x bacon
+
+1734213521655 Action: Client9 Pulled list 2
+Successfully pulled!
+
+1734213521703 Action: Client8 Added 1x cheddar to list 3
+1x zucchini
+1x cheddar
+
+1734213521709 Action: Client3 Added 1x vegetable oil to list 2
+1x vegetable oil
+
+1734213521731 Action: Client2 Picked list 2
+Picked list Successfully!
+
+1734213521774 Action: Client5 Added 1x cheddar to list 2
+1x vegetable oil
+1x cheddar
+
+1734213521783 Action: Client4 Pulled list 1
+Successfully pulled!
+
+1734213521872 Action: Client7 Added 1x onion to list 3
+1x onion
+
+1734213521879 Action: Client1 Pulled list 2
+Successfully pulled!
+1x vegetable oil
+1x cheddar
+
+1734213521997 Action: Client2 Added 1x bacon to list 2
+1x bacon
+
+1734213521998 Action: Client5 Pushed list 2
+Successfully pushed!
+1x vegetable oil
+1x cheddar
+
+1734213522049 Action: Client7 Added 1x bacon to list 3
+1x onion
+1x bacon
+
+1734213522074 Action: Client4 Fetched list 2
+Successfully pulled!
+
+1734213522102 Action: Client10 Fetched list 1
+Successfully pulled!
+
+1734213522169 Action: Client4 Pulled list 2
+Successfully pulled!
+1x vegetable oil
+1x cheddar
+
+1734213522195 Action: Client2 Pushed list 2
+Successfully pushed!
+1x bacon
+
+1734213522310 Action: Client9 Added 1x flour to list 2
+1x flour
+
+1734213522320 Action: Client6 Added 1x flour to list 2
+1x bacon
+1x flour
+
+1734213522398 Action: Client9 Pulled list 2
+Successfully pulled!
+1x flour
+1x vegetable oil
+1x cheddar
+
+1734213522418 Action: Client5 Added 1x flour to list 2
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213522430 Action: Client3 Pulled list 2
+Successfully pulled!
+2x vegetable oil
+1x bacon
+1x cheddar
+
+1734213522500 Action: Client10 Pulled list 1
+Successfully pulled!
+
+1734213522632 Action: Client8 Pulled list 3
+Successfully pulled!
+1x zucchini
+1x cheddar
+
+1734213522699 Action: Client10 Picked list 2
+Picked list Successfully!
+
+1734213522717 Action: Client2 Fetched list 1
+Successfully pulled!
+
+1734213522721 Action: Client1 Added 1x flour to list 2
+1x flour
+1x vegetable oil
+1x cheddar
+
+1734213522838 Action: Client4 Picked list 3
+Picked list Successfully!
+
+1734213522982 Action: Client7 Pushed list 3
+Successfully pushed!
+1x onion
+1x bacon
+
+1734213522983 Action: Client10 Pulled list 2
+Successfully pulled!
+1x zucchini
+1x bacon
+1x vegetable oil
+1x cheddar
+
+1734213523008 Action: Client6 Pulled list 2
+Successfully pulled!
+2x bacon
+1x flour
+1x vegetable oil
+1x cheddar
+
+1734213523027 Action: Client5 Added 1x onion to list 2
+1x vegetable oil
+1x cheddar
+1x flour
+1x onion
+
+1734213523122 Action: Client9 Added 1x bacon to list 2
+1x flour
+1x bacon
+1x vegetable oil
+1x cheddar
+
+1734213523134 Action: Client9 Pushed list 2
+Successfully pushed!
+1x flour
+1x bacon
+1x vegetable oil
+1x cheddar
+
+1734213523135 Action: Client1 Added 1x bacon to list 2
+1x flour
+1x bacon
+1x vegetable oil
+1x cheddar
+
+1734213523243 Action: Client1 Added 1x onion to list 2
+1x flour
+1x bacon
+1x onion
+1x vegetable oil
+1x cheddar
+
+1734213523362 Action: Client6 Added 4x egg to list 2
+2x bacon
+1x flour
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213523466 Action: Client3 Added 1x onion to list 2
+2x vegetable oil
+1x onion
+1x bacon
+1x cheddar
+
+1734213523588 Action: Client8 Fetched list 1
+Successfully pulled!
+
+1734213523672 Action: Client2 Pulled list 1
+Successfully pulled!
+
+1734213523761 Action: Client8 Added 1x onion to list 1
+1x onion
+
+1734213523788 Action: Client4 Pulled list 3
+Successfully pulled!
+
+1734213523809 Action: Client10 Picked list 3
+Picked list Successfully!
+
+1734213523822 Action: Client9 Fetched list 1
+Successfully pulled!
+
+1734213523849 Action: Client6 Pulled list 2
+Successfully pulled!
+3x bacon
+2x flour
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213523850 Action: Client5 Picked list 3
+Picked list Successfully!
+
+1734213523919 Action: Client4 Added 3x zucchini to list 3
+3x zucchini
+
+1734213523929 Action: Client3 Fetched list 1
+Successfully pulled!
+
+1734213523961 Action: Client4 Added 1x onion to list 3
+3x zucchini
+1x onion
+
+1734213523976 Action: Client10 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+
+1734213523985 Action: Client7 Added 1x flour to list 3
+1x onion
+1x bacon
+1x flour
+
+1734213523989 Action: Client9 Added 1x vegetable oil to list 1
+1x vegetable oil
+
+1734213524211 Action: Client1 Pulled list 2
+Successfully pulled!
+2x flour
+3x bacon
+1x onion
+1x vegetable oil
+1x cheddar
+
+1734213524295 Action: Client10 Added 3x egg to list 3
+3x egg
+1x onion
+1x bacon
+
+1734213524339 Action: Client5 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+
+1734213524468 Action: Client3 Pulled list 1
+Successfully pulled!
+
+1734213524533 Action: Client3 Picked list 3
+Picked list Successfully!
+
+1734213524547 Action: Client1 Removed 1x flour from list 2
+3x bacon
+1x onion
+1x vegetable oil
+1x cheddar
+
+1734213524649 Action: Client8 Pulled list 1
+Successfully pulled!
+1x onion
+
+1734213524665 Action: Client9 Pulled list 1
+Successfully pulled!
+1x vegetable oil
+
+1734213524685 Action: Client2 Added 1x flour to list 1
+1x flour
+
+1734213524700 Action: Client5 Fetched list 1
+Successfully pulled!
+
+1734213524817 Action: Client6 Picked list 1
+Picked list Successfully!
+
+1734213524837 Action: Client3 Added 1x zucchini to list 3
+1x zucchini
+
+1734213524837 Action: Client7 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+1x flour
+
+1734213524963 Action: Client4 Picked list 2
+Picked list Successfully!
+
+1734213524963 Action: Client10 Picked list 2
+Picked list Successfully!
+
+1734213525166 Action: Client4 Added 1x onion to list 2
+1x onion
+1x vegetable oil
+1x cheddar
+
+1734213525226 Action: Client2 Added 1x vegetable oil to list 1
+1x flour
+1x vegetable oil
+
+1734213525242 Action: Client2 Pushed list 1
+Successfully pushed!
+1x flour
+1x vegetable oil
+
+1734213525274 Action: Client3 Pulled list 3
+Successfully pulled!
+1x zucchini
+1x onion
+1x bacon
+
+1734213525324 Action: Client8 Added 1x flour to list 1
+1x onion
+1x flour
+
+1734213525460 Action: Client1 Fetched list 3
+Successfully pulled!
+1x onion
+1x bacon
+
+1734213525512 Action: Client5 Pulled list 1
+Successfully pulled!
+
+1734213525560 Action: Client7 Fetched list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213525560 Action: Client9 Picked list 3
+Picked list Successfully!
+
+1734213525639 Action: Client5 Picked list 3
+Picked list Successfully!
+
+1734213525711 Action: Client6 Pulled list 1
+Successfully pulled!
+1x flour
+1x vegetable oil
+
+1734213525887 Action: Client10 Pulled list 2
+Successfully pulled!
+1x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213526041 Action: Client8 Added 2x zucchini to list 1
+1x onion
+1x flour
+2x zucchini
+
+1734213526112 Action: Client10 Picked list 3
+Picked list Successfully!
+
+1734213526121 Action: Client4 Pulled list 2
+Successfully pulled!
+1x onion
+2x bacon
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213526142 Action: Client2 Picked list 3
+Picked list Successfully!
+
+1734213526180 Action: Client3 Added 1x vegetable oil to list 3
+1x zucchini
+1x vegetable oil
+1x onion
+1x bacon
+
+1734213526226 Action: Client1 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+
+1734213526242 Action: Client9 Pulled list 3
+Successfully pulled!
+1x cheddar
+1x onion
+1x bacon
+
+1734213526284 Action: Client3 Added 2x zucchini to list 3
+3x zucchini
+1x vegetable oil
+1x onion
+1x bacon
+
+1734213526285 Action: Client5 Added 1x flour to list 3
+1x flour
+1x onion
+1x bacon
+
+1734213526440 Action: Client6 Fetched list 3
+Successfully pulled!
+1x onion
+1x bacon
+
+1734213526456 Action: Client9 Picked list 2
+Picked list Successfully!
+
+1734213526469 Action: Client7 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213526533 Action: Client2 Added 2x zucchini to list 3
+1x onion
+2x zucchini
+
+1734213526657 Action: Client1 Picked list 1
+Picked list Successfully!
+
+1734213526678 Action: Client6 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+
+1734213526811 Action: Client1 Pulled list 1
+Successfully pulled!
+1x flour
+1x vegetable oil
+
+1734213526889 Action: Client8 Added 1x vegetable oil to list 1
+1x onion
+1x flour
+2x zucchini
+1x vegetable oil
+
+1734213526909 Action: Client10 Added 1x flour to list 3
+3x egg
+1x flour
+1x onion
+1x bacon
+
+1734213526969 Action: Client8 Pulled list 1
+Successfully pulled!
+1x onion
+2x flour
+2x zucchini
+2x vegetable oil
+
+1734213527023 Action: Client7 Picked list 3
+Picked list Successfully!
+
+1734213527025 Action: Client4 Removed 1x bacon from list 2
+1x onion
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213527045 Action: Client7 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+1x flour
+
+1734213527077 Action: Client3 Picked list 1
+Picked list Successfully!
+
+1734213527191 Action: Client9 Pulled list 2
+Successfully pulled!
+1x flour
+2x bacon
+1x vegetable oil
+1x cheddar
+
+1734213527250 Action: Client5 Pulled list 3
+Successfully pulled!
+1x flour
+1x onion
+1x bacon
+
+1734213527390 Action: Client2 Pulled list 3
+Successfully pulled!
+2x onion
+2x zucchini
+1x bacon
+
+1734213527477 Action: Client2 Picked list 2
+Picked list Successfully!
+
+1734213527552 Action: Client6 Added 5x egg to list 3
+5x egg
+1x onion
+1x bacon
+
+1734213527604 Action: Client9 Added 1x onion to list 2
+1x flour
+2x bacon
+1x onion
+1x vegetable oil
+1x cheddar
+
+1734213527612 Action: Client4 Picked list 3
+Picked list Successfully!
+
+1734213527662 Action: Client1 Added 5x egg to list 1
+5x egg
+1x flour
+1x vegetable oil
+
+1734213527704 Action: Client10 Added 1x vegetable oil to list 3
+3x egg
+1x flour
+1x vegetable oil
+1x onion
+1x bacon
+
+1734213527816 Action: Client8 Removed 1x flour from list 1
+1x onion
+2x zucchini
+2x vegetable oil
+
+1734213527829 Action: Client8 Pulled list 1
+Successfully pulled!
+1x onion
+2x zucchini
+2x vegetable oil
+1x flour
+
+1734213527850 Action: Client7 Picked list 1
+Picked list Successfully!
+
+1734213527863 Action: Client5 Added 4x zucchini to list 3
+1x flour
+4x zucchini
+1x onion
+1x bacon
+
+1734213527874 Action: Client7 Added 1x flour to list 1
+1x flour
+
+1734213527890 Action: Client6 Pulled list 3
+Successfully pulled!
+5x egg
+1x onion
+1x bacon
+
+1734213527921 Action: Client3 Added 4x zucchini to list 1
+4x zucchini
+
+1734213527953 Action: Client4 Pulled list 3
+Successfully pulled!
+3x zucchini
+2x onion
+1x bacon
+3x egg
+1x flour
+1x vegetable oil
+
+1734213528016 Action: Client10 Pushed list 3
+Successfully pushed!
+3x egg
+1x flour
+1x vegetable oil
+1x onion
+1x bacon
+
+1734213528155 Action: Client5 Picked list 2
+Picked list Successfully!
+
+1734213528193 Action: Client6 Added 4x zucchini to list 3
+5x egg
+4x zucchini
+1x onion
+1x bacon
+
+1734213528207 Action: Client7 Added 1x bacon to list 1
+1x flour
+1x bacon
+
+1734213528234 Action: Client6 Added 1x cheddar to list 3
+5x egg
+4x zucchini
+1x cheddar
+1x onion
+1x bacon
+
+1734213528313 Action: Client3 Pushed list 1
+Successfully pushed!
+4x zucchini
+
+1734213528329 Action: Client2 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213528375 Action: Client6 Pulled list 3
+Successfully pulled!
+8x egg
+4x zucchini
+1x cheddar
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213528454 Action: Client7 Pulled list 1
+Successfully pulled!
+2x flour
+1x bacon
+1x vegetable oil
+
+1734213528501 Action: Client1 Pushed list 1
+Successfully pushed!
+5x egg
+1x flour
+1x vegetable oil
+
+1734213528520 Action: Client10 Pulled list 3
+Successfully pulled!
+3x egg
+1x flour
+1x vegetable oil
+1x onion
+1x bacon
+
+1734213528566 Action: Client6 Picked list 2
+Picked list Successfully!
+
+1734213528594 Action: Client9 Removed 1x bacon from list 2
+1x flour
+1x onion
+1x vegetable oil
+1x cheddar
+
+1734213528646 Action: Client3 Pulled list 1
+Successfully pulled!
+4x zucchini
+1x flour
+1x vegetable oil
+
+1734213528654 Action: Client8 Fetched list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213528658 Action: Client9 Pulled list 2
+Successfully pulled!
+1x flour
+1x onion
+2x bacon
+1x vegetable oil
+1x cheddar
+
+1734213528742 Action: Client9 Added 4x egg to list 2
+1x flour
+1x onion
+2x bacon
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213528793 Action: Client6 Pulled list 2
+Successfully pulled!
+3x bacon
+2x flour
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213528848 Action: Client9 Pushed list 2
+Successfully pushed!
+1x flour
+1x onion
+2x bacon
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213528881 Action: Client5 Pulled list 2
+Successfully pulled!
+1x vegetable oil
+1x cheddar
+2x flour
+1x onion
+2x bacon
+
+1734213528888 Action: Client3 Picked list 2
+Picked list Successfully!
+
+1734213528901 Action: Client4 Picked list 2
+Picked list Successfully!
+
+1734213528931 Action: Client6 Picked list 3
+Picked list Successfully!
+
+1734213529074 Action: Client7 Picked list 2
+Picked list Successfully!
+
+1734213529131 Action: Client7 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+4x egg
+
+1734213529210 Action: Client1 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+4x zucchini
+
+1734213529211 Action: Client10 Added 1x zucchini to list 3
+3x egg
+1x flour
+1x vegetable oil
+1x zucchini
+1x onion
+1x bacon
+
+1734213529337 Action: Client10 Pulled list 3
+Successfully pulled!
+3x egg
+1x flour
+1x vegetable oil
+1x zucchini
+1x onion
+1x bacon
+
+1734213529357 Action: Client5 Removed 1x bacon from list 2
+1x vegetable oil
+1x cheddar
+2x flour
+1x onion
+
+1734213529374 Action: Client2 Picked list 3
+Picked list Successfully!
+
+1734213529408 Action: Client8 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+4x egg
+
+1734213529423 Action: Client6 Pulled list 3
+Successfully pulled!
+8x egg
+4x zucchini
+1x cheddar
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213529480 Action: Client4 Added 1x egg to list 2
+1x onion
+1x egg
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213529481 Action: Client3 Pulled list 2
+Successfully pulled!
+2x vegetable oil
+3x onion
+2x bacon
+1x cheddar
+2x flour
+4x egg
+
+1734213529557 Action: Client2 Pulled list 3
+Successfully pulled!
+2x onion
+2x zucchini
+1x bacon
+3x egg
+1x flour
+1x vegetable oil
+
+1734213529668 Action: Client9 Pulled list 2
+Successfully pulled!
+2x flour
+2x onion
+2x bacon
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213529742 Action: Client5 Pushed list 2
+Successfully pushed!
+1x vegetable oil
+1x cheddar
+2x flour
+1x onion
+
+1734213529793 Action: Client5 Picked list 1
+Picked list Successfully!
+
+1734213529797 Action: Client2 Added 1x cheddar to list 3
+2x onion
+2x zucchini
+1x cheddar
+1x bacon
+3x egg
+1x flour
+1x vegetable oil
+
+1734213529830 Action: Client8 Added 1x zucchini to list 2
+1x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+4x egg
+
+1734213529926 Action: Client7 Removed 1x bacon from list 2
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+4x egg
+
+1734213529978 Action: Client4 Pulled list 2
+Successfully pulled!
+3x onion
+5x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213530091 Action: Client6 Picked list 1
+Picked list Successfully!
+
+1734213530122 Action: Client9 Removed 1x onion from list 2
+2x flour
+2x bacon
+4x egg
+1x vegetable oil
+1x cheddar
+
+1734213530153 Action: Client1 Picked list 2
+Picked list Successfully!
+
+1734213530244 Action: Client10 Picked list 2
+Picked list Successfully!
+
+1734213530315 Action: Client4 Added 2x zucchini to list 2
+3x onion
+5x egg
+2x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213530348 Action: Client5 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+4x zucchini
+
+1734213530364 Action: Client9 Picked list 3
+Picked list Successfully!
+
+1734213530374 Action: Client3 Removed 1x vegetable oil from list 2
+3x onion
+2x bacon
+1x cheddar
+2x flour
+4x egg
+
+1734213530598 Action: Client2 Added 1x egg to list 3
+2x onion
+2x zucchini
+1x cheddar
+4x egg
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213530645 Action: Client8 Pulled list 2
+Successfully pulled!
+1x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+4x egg
+
+1734213530676 Action: Client2 Pulled list 3
+Successfully pulled!
+2x onion
+2x zucchini
+1x cheddar
+4x egg
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213530692 Action: Client6 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+4x zucchini
+
+1734213530767 Action: Client2 Picked list 1
+Picked list Successfully!
+
+1734213530849 Action: Client7 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+5x egg
+1x zucchini
+
+1734213530902 Action: Client8 Added 1x egg to list 2
+1x zucchini
+5x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+
+1734213530946 Action: Client1 Added 3x zucchini to list 2
+3x bacon
+1x onion
+3x zucchini
+1x vegetable oil
+1x cheddar
+
+1734213531043 Action: Client10 Removed 1x bacon from list 2
+1x zucchini
+1x vegetable oil
+1x cheddar
+1x flour
+
+1734213531083 Action: Client8 Pushed list 2
+Successfully pushed!
+1x zucchini
+5x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+
+1734213531148 Action: Client9 Pulled list 3
+Successfully pulled!
+1x cheddar
+1x onion
+1x bacon
+3x egg
+1x flour
+1x vegetable oil
+
+1734213531154 Action: Client5 Picked list 2
+Picked list Successfully!
+
+1734213531178 Action: Client2 Added 1x cheddar to list 1
+1x flour
+1x vegetable oil
+1x cheddar
+
+1734213531226 Action: Client5 Added 2x egg to list 2
+1x vegetable oil
+1x cheddar
+2x flour
+1x onion
+2x egg
+
+1734213531243 Action: Client8 Pulled list 2
+Successfully pulled!
+1x zucchini
+5x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+
+1734213531255 Action: Client4 Pushed list 2
+Successfully pushed!
+3x onion
+5x egg
+2x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213531275 Action: Client9 Picked list 2
+Picked list Successfully!
+
+1734213531311 Action: Client6 Picked list 3
+Picked list Successfully!
+
+1734213531315 Action: Client3 Pulled list 2
+Successfully pulled!
+3x onion
+2x bacon
+1x cheddar
+2x flour
+1x vegetable oil
+5x egg
+1x zucchini
+
+1734213531321 Action: Client7 Picked list 1
+Picked list Successfully!
+
+1734213531332 Action: Client1 Pulled list 2
+Successfully pulled!
+3x bacon
+3x onion
+4x zucchini
+1x vegetable oil
+1x cheddar
+2x flour
+5x egg
+
+1734213531379 Action: Client7 Pulled list 1
+Successfully pulled!
+2x flour
+1x bacon
+5x egg
+1x vegetable oil
+4x zucchini
+
+1734213531522 Action: Client9 Pulled list 2
+Successfully pulled!
+2x flour
+2x bacon
+6x egg
+3x onion
+1x vegetable oil
+1x cheddar
+3x zucchini
+
+1734213531534 Action: Client5 Pulled list 2
+Successfully pulled!
+1x vegetable oil
+1x cheddar
+2x flour
+3x onion
+8x egg
+2x bacon
+3x zucchini
+
+1734213531543 Action: Client6 Pulled list 3
+Successfully pulled!
+8x egg
+4x zucchini
+1x cheddar
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213531582 Action: Client10 Pulled list 2
+Successfully pulled!
+2x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+5x egg
+
+1734213531593 Action: Client3 Added 3x zucchini to list 2
+3x onion
+4x zucchini
+2x bacon
+1x cheddar
+2x flour
+1x vegetable oil
+5x egg
+
+1734213531629 Action: Client3 Removed 1x flour from list 2
+3x onion
+4x zucchini
+2x bacon
+1x cheddar
+1x vegetable oil
+5x egg
+
+1734213531657 Action: Client1 Removed 1x bacon from list 2
+3x onion
+4x zucchini
+1x vegetable oil
+1x cheddar
+2x flour
+5x egg
+
+1734213531667 Action: Client10 Added 2x zucchini to list 2
+4x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+2x onion
+5x egg
+
+1734213531797 Action: Client10 Pulled list 2
+Successfully pulled!
+6x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+3x onion
+6x egg
+
+1734213532008 Action: Client7 Picked list 3
+Picked list Successfully!
+
+1734213532033 Action: Client2 Pulled list 1
+Successfully pulled!
+1x flour
+1x vegetable oil
+1x cheddar
+5x egg
+4x zucchini
+
+1734213532038 Action: Client4 Pulled list 2
+Successfully pulled!
+3x onion
+6x egg
+3x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213532070 Action: Client6 Removed 1x egg from list 3
+4x zucchini
+1x cheddar
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213532103 Action: Client4 Removed 1x flour from list 2
+3x onion
+6x egg
+3x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+
+1734213532216 Action: Client8 Removed 1x onion from list 2
+1x zucchini
+5x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213532217 Action: Client9 Picked list 1
+Picked list Successfully!
+
+1734213532265 Action: Client5 Removed 1x flour from list 2
+1x vegetable oil
+1x cheddar
+3x onion
+8x egg
+2x bacon
+3x zucchini
+
+1734213532300 Action: Client6 Added 5x egg to list 3
+4x zucchini
+1x cheddar
+5x egg
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213532390 Action: Client10 Removed 1x flour from list 2
+6x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+3x onion
+6x egg
+
+1734213532426 Action: Client7 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+2x flour
+3x egg
+1x vegetable oil
+
+1734213532518 Action: Client6 Pulled list 3
+Successfully pulled!
+4x zucchini
+1x cheddar
+8x egg
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213532595 Action: Client1 Pushed list 2
+Successfully pushed!
+3x onion
+4x zucchini
+1x vegetable oil
+1x cheddar
+2x flour
+5x egg
+
+1734213532596 Action: Client3 Added 1x flour to list 2
+3x onion
+4x zucchini
+1x flour
+2x bacon
+1x cheddar
+1x vegetable oil
+5x egg
+
+1734213532612 Action: Client9 Pulled list 1
+Successfully pulled!
+2x vegetable oil
+5x egg
+1x flour
+4x zucchini
+
+1734213532800 Action: Client1 Added 1x bacon to list 2
+3x onion
+4x zucchini
+1x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+5x egg
+
+1734213532883 Action: Client2 Added 1x bacon to list 1
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+5x egg
+4x zucchini
+
+1734213533051 Action: Client7 Picked list 2
+Picked list Successfully!
+
+1734213533064 Action: Client4 Pulled list 2
+Successfully pulled!
+4x onion
+6x egg
+6x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213533065 Action: Client1 Pulled list 2
+Successfully pulled!
+4x onion
+6x zucchini
+3x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+6x egg
+
+1734213533082 Action: Client5 Added 1x zucchini to list 2
+1x vegetable oil
+1x cheddar
+3x onion
+8x egg
+4x zucchini
+2x bacon
+
+1734213533128 Action: Client2 Added 1x onion to list 1
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+1x onion
+5x egg
+4x zucchini
+
+1734213533147 Action: Client8 Picked list 3
+Picked list Successfully!
+
+1734213533164 Action: Client7 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+4x onion
+6x egg
+6x zucchini
+
+1734213533199 Action: Client9 Added 1x bacon to list 1
+2x vegetable oil
+1x bacon
+5x egg
+1x flour
+4x zucchini
+
+1734213533210 Action: Client1 Removed 1x egg from list 2
+4x onion
+6x zucchini
+3x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213533222 Action: Client10 Pulled list 2
+Successfully pulled!
+9x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+4x onion
+2x flour
+6x egg
+
+1734213533246 Action: Client6 Picked list 1
+Picked list Successfully!
+
+1734213533263 Action: Client10 Picked list 3
+Picked list Successfully!
+
+1734213533285 Action: Client1 Added 1x egg to list 2
+4x onion
+6x zucchini
+3x bacon
+1x egg
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213533301 Action: Client3 Picked list 1
+Picked list Successfully!
+
+1734213533318 Action: Client1 Removed 1x flour from list 2
+4x onion
+6x zucchini
+3x bacon
+1x egg
+1x vegetable oil
+1x cheddar
+
+1734213533428 Action: Client2 Pushed list 1
+Successfully pushed!
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+1x onion
+5x egg
+4x zucchini
+
+1734213533466 Action: Client6 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+1x onion
+4x zucchini
+
+1734213533479 Action: Client4 Removed 1x bacon from list 2
+4x onion
+6x egg
+6x zucchini
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213533551 Action: Client9 Added 1x cheddar to list 1
+2x vegetable oil
+1x bacon
+1x cheddar
+5x egg
+1x flour
+4x zucchini
+
+1734213533645 Action: Client1 Pulled list 2
+Successfully pulled!
+4x onion
+6x zucchini
+3x bacon
+7x egg
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213533651 Action: Client10 Pulled list 3
+Successfully pulled!
+3x egg
+1x flour
+1x vegetable oil
+1x zucchini
+1x onion
+1x bacon
+
+1734213533665 Action: Client2 Pulled list 1
+Successfully pulled!
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+1x onion
+5x egg
+4x zucchini
+
+1734213533774 Action: Client1 Picked list 1
+Picked list Successfully!
+
+1734213533846 Action: Client8 Pulled list 3
+Successfully pulled!
+1x zucchini
+1x cheddar
+1x onion
+1x bacon
+3x egg
+1x flour
+1x vegetable oil
+
+1734213534036 Action: Client7 Removed 1x egg from list 2
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+4x onion
+6x zucchini
+
+1734213534037 Action: Client10 Added 2x zucchini to list 3
+3x egg
+1x flour
+1x vegetable oil
+3x zucchini
+1x onion
+1x bacon
+
+1734213534046 Action: Client5 Pushed list 2
+Successfully pushed!
+1x vegetable oil
+1x cheddar
+3x onion
+8x egg
+4x zucchini
+2x bacon
+
+1734213534064 Action: Client3 Added 1x onion to list 1
+4x zucchini
+1x onion
+1x flour
+1x vegetable oil
+
+1734213534078 Action: Client10 Pulled list 3
+Successfully pulled!
+3x egg
+1x flour
+1x vegetable oil
+3x zucchini
+1x onion
+1x bacon
+
+1734213534101 Action: Client6 closed the system
+Successfully closed the System
+
+1734213534263 Action: Client7 Removed 1x onion from list 2
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+6x zucchini
+
+1734213534283 Action: Client1 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+1x onion
+4x zucchini
+
+1734213534468 Action: Client9 Pulled list 1
+Successfully pulled!
+2x vegetable oil
+2x bacon
+2x cheddar
+5x egg
+1x flour
+1x onion
+4x zucchini
+
+1734213534469 Action: Client4 Removed 1x egg from list 2
+4x onion
+6x zucchini
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213534488 Action: Client1 Picked list 3
+Picked list Successfully!
+
+1734213534598 Action: Client2 Picked list 2
+Picked list Successfully!
+
+1734213534630 Action: Client5 Picked list 1
+Picked list Successfully!
+
+1734213534761 Action: Client10 Added 1x zucchini to list 3
+3x egg
+1x flour
+1x vegetable oil
+4x zucchini
+1x onion
+1x bacon
+
+1734213534801 Action: Client8 Added 3x zucchini to list 3
+4x zucchini
+1x cheddar
+1x onion
+1x bacon
+3x egg
+1x flour
+1x vegetable oil
+
+1734213534908 Action: Client3 Pushed list 1
+Successfully pushed!
+4x zucchini
+1x onion
+1x flour
+1x vegetable oil
+
+1734213534938 Action: Client2 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+4x onion
+8x egg
+7x zucchini
+
+1734213534969 Action: Client1 Added 1x flour to list 3
+1x flour
+1x onion
+1x bacon
+
+1734213534989 Action: Client9 Removed 1x vegetable oil from list 1
+2x bacon
+2x cheddar
+5x egg
+1x flour
+1x onion
+4x zucchini
+
+1734213535045 Action: Client7 Picked list 3
+Picked list Successfully!
+
+1734213535053 Action: Client2 Picked list 1
+Picked list Successfully!
+
+1734213535123 Action: Client1 Added 1x egg to list 3
+1x flour
+1x egg
+1x onion
+1x bacon
+
+1734213535127 Action: Client3 Added 1x bacon to list 1
+4x zucchini
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213535173 Action: Client7 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+2x flour
+3x egg
+1x vegetable oil
+
+1734213535216 Action: Client9 Removed 1x cheddar from list 1
+2x bacon
+5x egg
+1x flour
+1x onion
+4x zucchini
+
+1734213535232 Action: Client4 Pulled list 2
+Successfully pulled!
+4x onion
+7x zucchini
+8x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213535280 Action: Client5 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+2x onion
+4x zucchini
+
+1734213535307 Action: Client9 Added 1x vegetable oil to list 1
+2x bacon
+1x vegetable oil
+5x egg
+1x flour
+1x onion
+4x zucchini
+
+1734213535353 Action: Client10 Picked list 2
+Picked list Successfully!
+
+1734213535384 Action: Client3 Added 1x cheddar to list 1
+4x zucchini
+1x onion
+1x bacon
+1x cheddar
+1x flour
+1x vegetable oil
+
+1734213535400 Action: Client9 Pulled list 1
+Successfully pulled!
+2x bacon
+2x vegetable oil
+5x egg
+1x flour
+2x onion
+1x cheddar
+4x zucchini
+
+1734213535493 Action: Client8 Added 2x egg to list 3
+4x zucchini
+1x cheddar
+5x egg
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213535547 Action: Client9 Picked list 2
+Picked list Successfully!
+
+1734213535713 Action: Client9 Pulled list 2
+Successfully pulled!
+2x flour
+2x bacon
+8x egg
+4x onion
+1x vegetable oil
+1x cheddar
+7x zucchini
+
+1734213535837 Action: Client3 Pulled list 1
+Successfully pulled!
+4x zucchini
+2x onion
+2x bacon
+2x cheddar
+5x egg
+1x flour
+1x vegetable oil
+
+1734213535837 Action: Client8 Pulled list 3
+Successfully pulled!
+4x zucchini
+1x cheddar
+5x egg
+1x onion
+1x bacon
+1x flour
+1x vegetable oil
+
+1734213535948 Action: Client7 Added 2x egg to list 3
+1x onion
+1x bacon
+2x flour
+5x egg
+1x vegetable oil
+
+1734213535961 Action: Client1 Added 2x egg to list 3
+1x flour
+3x egg
+1x onion
+1x bacon
+
+1734213535966 Action: Client5 Removed 1x onion from list 1
+5x egg
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+4x zucchini
+
+1734213536012 Action: Client2 Pulled list 1
+Successfully pulled!
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+2x onion
+5x egg
+4x zucchini
+
+1734213536064 Action: Client4 Removed 1x zucchini from list 2
+4x onion
+8x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213536181 Action: Client1 Added 1x zucchini to list 3
+1x flour
+3x egg
+1x zucchini
+1x onion
+1x bacon
+
+1734213536181 Action: Client4 Pushed list 2
+Successfully pushed!
+4x onion
+8x egg
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+
+1734213536235 Action: Client8 closed the system
+Successfully closed the System
+
+1734213536276 Action: Client5 Pushed list 1
+Successfully pushed!
+5x egg
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+4x zucchini
+
+1734213536282 Action: Client10 Pulled list 2
+Successfully pulled!
+10x zucchini
+2x bacon
+1x vegetable oil
+1x cheddar
+4x onion
+2x flour
+8x egg
+
+1734213536349 Action: Client2 Removed 1x onion from list 1
+1x flour
+1x vegetable oil
+1x cheddar
+1x bacon
+5x egg
+4x zucchini
+
+1734213536375 Action: Client4 Picked list 3
+Picked list Successfully!
+
+1734213536376 Action: Client9 Removed 2x onion from list 2
+2x flour
+2x bacon
+8x egg
+1x vegetable oil
+1x cheddar
+7x zucchini
+
+1734213536638 Action: Client3 Removed 1x bacon from list 1
+4x zucchini
+2x onion
+2x cheddar
+5x egg
+1x flour
+1x vegetable oil
+
+1734213536666 Action: Client3 Added 1x bacon to list 1
+4x zucchini
+2x onion
+2x cheddar
+1x bacon
+5x egg
+1x flour
+1x vegetable oil
+
+1734213536681 Action: Client1 Pushed list 3
+Successfully pushed!
+1x flour
+3x egg
+1x zucchini
+1x onion
+1x bacon
+
+1734213536716 Action: Client1 Pulled list 3
+Successfully pulled!
+2x flour
+6x egg
+1x zucchini
+1x onion
+1x bacon
+1x vegetable oil
+
+1734213536805 Action: Client7 Picked list 2
+Picked list Successfully!
+
+1734213536919 Action: Client10 Picked list 3
+Picked list Successfully!
+
+1734213536980 Action: Client10 Pulled list 3
+Successfully pulled!
+6x egg
+2x flour
+1x vegetable oil
+5x zucchini
+1x onion
+1x bacon
+
+1734213537023 Action: Client2 Picked list 2
+Picked list Successfully!
+
+1734213537086 Action: Client3 Pushed list 1
+Successfully pushed!
+4x zucchini
+2x onion
+2x cheddar
+1x bacon
+5x egg
+1x flour
+1x vegetable oil
+
+1734213537245 Action: Client2 Removed 1x zucchini from list 2
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+4x onion
+8x egg
+
+1734213537259 Action: Client7 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+4x onion
+8x egg
+7x zucchini
+
+1734213537279 Action: Client5 Picked list 3
+Picked list Successfully!
+
+1734213537287 Action: Client9 Pulled list 2
+Successfully pulled!
+2x flour
+2x bacon
+8x egg
+4x onion
+1x vegetable oil
+1x cheddar
+7x zucchini
+
+1734213537308 Action: Client1 Removed 1x egg from list 3
+2x flour
+1x zucchini
+1x onion
+1x bacon
+1x vegetable oil
+
+1734213537370 Action: Client4 Pulled list 3
+Successfully pulled!
+4x zucchini
+2x onion
+1x bacon
+6x egg
+2x flour
+1x vegetable oil
+
+1734213537456 Action: Client10 Picked list 1
+Picked list Successfully!
+
+1734213537603 Action: Client10 Added 1x cheddar to list 1
+1x cheddar
+
+1734213537728 Action: Client10 Pulled list 1
+Successfully pulled!
+3x cheddar
+5x egg
+1x flour
+1x vegetable oil
+2x bacon
+2x onion
+4x zucchini
+
+1734213537826 Action: Client7 Picked list 3
+Picked list Successfully!
+
+1734213537899 Action: Client2 Pulled list 2
+Successfully pulled!
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+4x onion
+8x egg
+7x zucchini
+
+1734213538029 Action: Client9 Picked list 1
+Picked list Successfully!
+
+1734213538049 Action: Client2 Removed 2x onion from list 2
+2x bacon
+1x vegetable oil
+1x cheddar
+2x flour
+8x egg
+7x zucchini
+
+1734213538060 Action: Client9 Pulled list 1
+Successfully pulled!
+3x bacon
+2x vegetable oil
+5x egg
+1x flour
+2x onion
+2x cheddar
+4x zucchini
+
+1734213538076 Action: Client4 Picked list 1
+Picked list Successfully!
+
+1734213538107 Action: Client3 Pulled list 1
+Successfully pulled!
+4x zucchini
+2x onion
+2x cheddar
+2x bacon
+5x egg
+1x flour
+1x vegetable oil
+
+1734213538196 Action: Client1 Pushed list 3
+Successfully pushed!
+2x flour
+1x zucchini
+1x onion
+1x bacon
+1x vegetable oil
+
+1734213538260 Action: Client5 Added 1x vegetable oil to list 3
+1x flour
+4x zucchini
+1x vegetable oil
+1x onion
+1x bacon
+
+1734213538278 Action: Client9 Picked list 3
+Picked list Successfully!
+
+1734213538322 Action: Client2 Picked list 3
+Picked list Successfully!
+
+1734213538510 Action: Client4 Pulled list 1
+Successfully pulled!
+5x egg
+1x flour
+1x vegetable oil
+2x cheddar
+2x bacon
+2x onion
+4x zucchini
+
+1734213538651 Action: Client4 Removed 1x onion from list 1
+5x egg
+1x flour
+1x vegetable oil
+2x cheddar
+2x bacon
+4x zucchini
+
+1734213538655 Action: Client9 Picked list 1
+Picked list Successfully!
+
+1734213538702 Action: Client7 Pulled list 3
+Successfully pulled!
+1x onion
+1x bacon
+3x flour
+8x egg
+1x vegetable oil
+1x zucchini
+
+1734213538708 Action: Client10 Removed 2x cheddar from list 1
+5x egg
+1x flour
+1x vegetable oil
+2x bacon
+2x onion
+4x zucchini
+
+1734213538778 Action: Client10 Removed 1x bacon from list 1
+5x egg
+1x flour
+1x vegetable oil
+2x onion
+4x zucchini
+
+1734213538856 Action: Client5 Pulled list 3
+Successfully pulled!
+3x flour
+5x zucchini
+2x vegetable oil
+1x onion
+1x bacon
+6x egg
+
+1734213539003 Action: Client3 closed the system
+Successfully closed the System
+
+1734213539043 Action: Client4 closed the system
+Successfully closed the System
+
+1734213539049 Action: Client2 closed the system
+Successfully closed the System
+
+1734213539064 Action: Client1 closed the system
+Successfully closed the System
+
+1734213539155 Action: Client7 closed the system
+Successfully closed the System
+
+1734213539487 Action: Client9 closed the system
+Successfully closed the System
+
+1734213539639 Action: Client10 closed the system
+Successfully closed the System
+
+1734213539815 Action: Client5 closed the system
+Successfully closed the System
+
