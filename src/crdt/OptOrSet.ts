@@ -87,15 +87,13 @@ export default class OptOrSet{
      * @returns {boolean}
      */
     private inSet(elem:[string,number,string],set:Set<[string,number,string]>){
-        set.forEach((setElem)=>{
-            if(this.equals(elem,setElem)){
-                return true;
-            }
-        });
+        for(let setElem of set){
+            if(this.equals(elem,setElem)) return true;
+        }
         return false;
     }
     private hasObsolete(elem:[string,number,string],set:Set<[string,number,string]>){
-        set.forEach((setTuple)=>{
+        for(let setTuple of set){
             const item = setTuple[0];
             const timestamp = setTuple[1];
             const client = setTuple[2];
@@ -103,11 +101,10 @@ export default class OptOrSet{
             const elemItem = elem[0];
             const elemTimeStamp = elem[1];
             const elemClient = elem[2];
-
             if(item === elemItem && timestamp<elemTimeStamp && client === elemClient){
                 return true;
             }
-        })
+        }
         return false
     }
     private getObsolete(elem:[string,number,string],set:Set<[string,number,string]>){
