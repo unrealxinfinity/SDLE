@@ -77,7 +77,7 @@ export default async function workerProcess() {
 
 async function syncList(list: string) {
   const workers = JSON.parse(process.env.WORKERIDS);
-  const owners = hr.range(list, 3);
+  const owners = hr.range(list, 2);
 
   for (const owner of owners) {
     if (owner === process.env.ID) continue;
@@ -229,7 +229,7 @@ async function processRequests(sock: zmq.Dealer) {
           if (!list) {
             const workers = JSON.parse(process.env.WORKERIDS);
 
-            for (const owner of hr.range(contents.id, 3)) {
+            for (const owner of hr.range(contents.id, 2)) {
               if (owner === process.env.ID) continue;
 
               if (await cacheMiss(workers[owner], contents.id) === true) {
