@@ -5,11 +5,11 @@ import * as HashRing from "hashring";
 import * as fs from 'fs';
 import workerProcess from "./worker.js";
 import { readJsonFile } from "../utills/files.js";
+import 'dotenv/config';
 
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
-const clients = 10;
-const workers = 2;
+const workers = Number.parseInt(process.env.INITIALWORKERS);
 const workerIds = {};
 const mapping = {};
 const basePort = 5000;
