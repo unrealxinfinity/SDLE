@@ -87,7 +87,7 @@ async function syncList(list: string) {
     const request = {
       type: "sync",
       id: list,
-      list: shoppingLists[list].toJSON()
+      list: shoppingLists[list]?.toJSON() ?? "deleted"
     };
   
     await requester.send(JSON.stringify(request));
@@ -169,7 +169,7 @@ async function processRequests(sock: zmq.Dealer) {
     count++;
 
     if (count > 5) {
-      cluster.worker.kill();
+      //cluster.worker.kill();
     }
 
     clearInterval(interval);
@@ -209,12 +209,17 @@ async function processRequests(sock: zmq.Dealer) {
           await sock.send([msg[1], "", JSON.stringify(confirmation)]);
           break;
         case "update":
-          const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
-          if (!(contents.id in shoppingLists)) {
-            shoppingLists[contents.id] = receivedList;
+          if (contents.list === "delete") {
+            delete shoppingLists[contents.id];
           }
           else {
-            shoppingLists[contents.id].join(receivedList);
+            const receivedList = PNShoppingMap.fromJSON(contents.list,"", contents.id);
+            if (!(contents.id in shoppingLists)) {
+              shoppingLists[contents.id] = receivedList;
+            }
+            else {
+              shoppingLists[contents.id].join(receivedList);
+            }
           }
           if (!toSync.includes(contents.id)) toSync.push(contents.id);
           const updateReply = {
@@ -286,6 +291,11 @@ async function workerComms(listReceiver: zmq.Reply) {
             await listReceiver.send(JSON.stringify(reply));
             break;
           case "sync":
+            if (msg.list === "deleted") {
+              delete shoppingLists[msg.id];
+              await listReceiver.send(JSON.stringify({}));
+              break;
+            }
             if (!(msg.id in shoppingLists)) {
               shoppingLists[msg.id] = PNShoppingMap.fromJSON(msg.list, null, msg.id);
             }

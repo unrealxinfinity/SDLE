@@ -9,7 +9,7 @@ import { readJsonFile } from "../utills/files.js";
 const backAddr = "tcp://127.0.0.1:12345";
 const frontAddr = "tcp://127.0.0.1:12346";
 const clients = 10;
-const workers = 1;
+const workers = 2;
 const workerIds = {};
 const mapping = {};
 const basePort = 5000;
