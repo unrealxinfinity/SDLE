@@ -5,6 +5,7 @@ import * as zmq from "zeromq";
 import cluster from "node:cluster";
 import * as taskManager from "./clientTaskManager.js";
 import { readJsonFile } from "./utills/files.js";
+import { v4 as uuidv4 } from "uuid";
 
 enum ConsoleState{
     LOGIN, 
@@ -70,11 +71,6 @@ function readFromLocalStorage(userName : string | null){
     }
 }
 
-function generateGUId() : string {
-    const timestamp : Number = new Date().getTime();
-    const random_num : Number = Math.floor(Math.random() * 1000000);
-    return `${timestamp}-${random_num}`; 
-}
 
 
 function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
@@ -149,7 +145,7 @@ async function handleInput(user : user){
 
     function createShoppingList(name : string, user : user){
         if(!user.states.has(name)){
-            let id = generateGUId();
+            let id = uuidv4();
             if(automatedTesting)id = id = user.name.slice(6);
             const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: null}
             user.lists.set(name, id);
