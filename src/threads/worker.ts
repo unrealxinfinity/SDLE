@@ -27,7 +27,7 @@ function buildHashRing(ids: any): HashRing {
 
 export default async function workerProcess() {
   if (fs.existsSync(process.env.ID+'.json')) {
-    const loadedLists = readJsonFile(process.env.ID);
+    const loadedLists = readJsonFile("./serverStorage/"+process.env.ID);
     const envData = JSON.parse(loadedLists.envData);
     process.env.ID = envData.ID.toString();
     process.env.WORKERIDS = JSON.stringify(envData.WORKERIDS);
@@ -58,7 +58,7 @@ export default async function workerProcess() {
   setInterval(() => {
     const envData = JSON.stringify({PORT: process.env.PORT, ID: process.env.ID, WORKERIDS: process.env.WORKERIDS});
     const listData = JSON.stringify(shoppingLists, null, 2);
-    fs.writeFileSync(process.env.ID+'.json', JSON.stringify({listData, envData}), 'utf8')
+    fs.writeFileSync("./serverStorage/"+process.env.ID+'.json', JSON.stringify({listData, envData}), 'utf8')
   }, 10000);
 
   setInterval(() => {

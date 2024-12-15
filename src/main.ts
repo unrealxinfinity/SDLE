@@ -396,7 +396,6 @@ async function handleInput(user : user){
        -"test --filePath" to run a custom test;
        -"test --clients --lists --time" to run automatic tests with varrying number of clients, lists and time duration(seconds);
        -"debug --clientName --listName" to enter debug mode on a client in a list;
-       -"kill --workerID" to kill a worker;
        -"birth" to birth a worker;
        -"close" to exit the program;\n\n`;
 
@@ -411,7 +410,6 @@ async function handleInput(user : user){
        -"test --filePath" to run a custom test;
        -"test --clients --lists --time" to run automatic tests with varrying number of clients, lists and time duration(seconds);
        -"debug --clientName --listName" to enter debug mode on a client in a list;
-       -"kill --workerID" to kill a worker;
        -"birth" to birth a worker;
        -"close" to exit the program;\n\n`;
 
@@ -430,7 +428,6 @@ async function handleInput(user : user){
        -"test --filePath" to run a custom test;
        -"test --clients --lists --time" to run automatic tests with varrying number of clients, lists and time duration(seconds);
        -"debug --clientName --listName" to enter debug mode on a client in a list;
-       -"kill --workerID" to kill a worker;
        -"birth" to birth a worker;
        -"close" to exit the program;\n\n`;
 
@@ -621,23 +618,6 @@ async function handleInput(user : user){
                             console.log("Exited debug mode");
                         }
                         
-                    }
-                    else if(command == "kill" && answerArrayLength == 2){
-                        const workerID : string = answerArray[1];
-                        const sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
-                        sock.connect(frontAddr);
-                        const killMsg = {
-                            type: "kill",
-                            id: workerID
-                        };
-                        try{
-                            await sock.send(JSON.stringify(killMsg));
-                            console.log("Worker " + workerID + " was killed");
-                        }catch(e){
-                            console.log("Failed to kill worker " + workerID);
-                        }
-                    
-                        sock.close();
                     }
                     else if(command == "birth" && answerArrayLength == 1){
                         const sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});

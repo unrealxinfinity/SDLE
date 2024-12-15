@@ -174,10 +174,10 @@ if (cluster.isPrimary) {
 
   // @ts-expect-error
   const hashRing = new HashRing.default([], "md5", { replicas: 1 }) as HashRing;
-  const loadedState = fs.existsSync("broker.json") ? readJsonFile("broker") : null;
+  const loadedState = fs.existsSync("./serverStorage/broker.json") ? readJsonFile("./serverStorage/broker") : null;
 
   if (loadedState) {
-    const loadedState = readJsonFile("broker");
+    const loadedState = readJsonFile("./serverStorage/broker");
     lastUsedPort = loadedState.lastUsedPort;
     for (const worker in loadedState.workerIds) {
       workerIds[worker] = loadedState.workerIds[worker];
@@ -243,7 +243,7 @@ if (cluster.isPrimary) {
   });
 
   setInterval(() => {
-    fs.writeFileSync("broker.json", JSON.stringify({workerIds, lastUsedPort}), 'utf8')
+    fs.writeFileSync("./serverStorage/broker.json", JSON.stringify({workerIds, lastUsedPort}), 'utf8')
   }, 15000);
 
   await loadBalancer(hashRing);
