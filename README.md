@@ -6,8 +6,7 @@ Group members:
 
 1. Afonso Vaz Osório (up202108700@up.pt)
 2. João Cardoso (up202108732@up.pt)
-3. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
-4. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
+3. HaoChang Fu (up202108730@up.pt)
 
 ## Execution
 
