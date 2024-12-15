@@ -29,7 +29,7 @@ function buildHashRing(ids: any): HashRing {
 }
 
 export default async function workerProcess() {
-  if (fs.existsSync(process.env.ID+'.json')) {
+  if (fs.existsSync("./serverStorage/"+process.env.ID+'.json')) {
     const loadedLists = readJsonFile("./serverStorage/"+process.env.ID);
     const envData = JSON.parse(loadedLists.envData);
     process.env.ID = envData.ID.toString();
