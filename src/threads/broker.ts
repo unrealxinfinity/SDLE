@@ -232,6 +232,8 @@ if (cluster.isPrimary) {
   cluster.on("disconnect", async function (worker) {
     console.log(worker.process.pid);
     await new Promise(resolve => setTimeout(resolve, 5000));
+    if (!(pids[worker.process.pid] in workerIds)) return;
+
     const forked = cluster.fork({
       TYPE: "worker",
       ID: pids[worker.process.pid],
