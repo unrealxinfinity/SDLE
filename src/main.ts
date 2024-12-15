@@ -5,6 +5,7 @@ import * as zmq from "zeromq";
 import cluster from "node:cluster";
 import * as taskManager from "./clientTaskManager.js";
 import { readJsonFile } from "./utills/files.js";
+import { v4 as uuidv4 } from "uuid";
 
 enum ConsoleState{
     LOGIN, 
@@ -71,9 +72,7 @@ function readFromLocalStorage(userName : string | null){
 }
 
 function generateGUId() : string {
-    const timestamp : Number = new Date().getTime();
-    const random_num : Number = Math.floor(Math.random() * 1000000);
-    return `${timestamp}-${random_num}`; 
+    return uuidv4();
 }
 
 
