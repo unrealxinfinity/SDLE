@@ -5,6 +5,8 @@ const actions : Array<string> = [];
 
 const answers : Array<string> = [];
 
+const crdts : Array<string> = [];
+
 const recipes : Array<PNShoppingMap> = [];
 
 const listIDs : Array<string> = []
@@ -35,8 +37,9 @@ async function pushAction(commands : Array<string>, action : string, description
 
 }
 
-export function pushAnswer(answer : string){
+export function pushAnswer(answer : string, crdt : string){
     answers.push(answer + "\n\n");
+    crdts.push(crdt + "\n\n");
 }
 
 
@@ -45,7 +48,7 @@ export function pushCartContents(crdt : PNShoppingMap, answer : string){
         const quantity = crdt.calcTotal(itemName);
         if(quantity > 0) answer += quantity + "x " + itemName + "\n";
     }
-    pushAnswer(answer);
+    pushAnswer(answer, crdt.toJSON());
 }
 
 
@@ -237,12 +240,24 @@ function getRandomRecipe(){
 
 export function writeLog(){
     let content = "";
+    let crdt_content = "";
     for(let index = 0; index < Math.min(actions.length, answers.length); index++){
         content += actions[index];
         content += answers[index];
     }
+    for(let index = 0; index < Math.min(actions.length, crdts.length); index++){
+        crdt_content += actions[index];
+        crdt_content += crdts[index];
+    }
+
+    
     try{
         fs.writeFileSync('./clientLogs/'+user+'.txt', content, 'utf8');
+    }catch(error){
+        console.log("error while logging " + user);
+    }
+    try{
+        fs.writeFileSync('./crdtLogs/' + user + '.txt', crdt_content, 'utf8');
     }catch(error){
         console.log("error while logging " + user);
     }

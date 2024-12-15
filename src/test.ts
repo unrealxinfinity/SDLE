@@ -1,7 +1,7 @@
 import { PNShoppingMap } from "./crdt/PNShoppingMap.js";
 import OptOrSet from "./crdt/OptOrSet.js";
 
-let list1 = new PNShoppingMap("Client1","list1");
+/*let list1 = new PNShoppingMap("Client1","list1");
 let list2 = new PNShoppingMap("Client2","list1");
 list1.add("banana");
 list2.add("apple");
@@ -13,7 +13,17 @@ list2.buy("apple");
 console.log(list1.toJSON())
 
 let test:any = PNShoppingMap.fromJSON(list1.toJSON())
-console.log("ola");
+console.log("ola");*/
+
+let list1 = new PNShoppingMap("Client1","list1");
+let list2 = new PNShoppingMap("Client2","list1");
+
+list1.add("banana", 3);
+list1.join(list2);
+list1.remove("banana", 2);
+list2.remove("banana", 2);
+list1.join(list2);
+console.log(list1.toJSON());
 
 /*
 list2.add("banana");

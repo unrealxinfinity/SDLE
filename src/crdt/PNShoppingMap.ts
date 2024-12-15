@@ -58,22 +58,25 @@ class PNShoppingMap{
         }
         
         if(this.dec.get(this.clientId).has(item)){
-            if(this.calcTotal(item)-quantity<0){
+            const totalQuantity = this.calcTotal(item);
+            if(totalQuantity-quantity<0){
                 console.log("Can't remove more than what shopping list has for client:" + this.clientId + "in cart: "+this.id);
                 return;
             }
-            else if (this.calcTotal(item)-quantity===0){
+            else if (totalQuantity-quantity===0){
                 this.removeProduct(item);
                 console.log("Deleted " + item + " from the cart!");
                 return;
             }
+            
             const [notBought,bought] = this.dec.get(this.clientId).get(item);
-            this.dec.get(this.clientId).set(item,[notBought+quantity,bought]);
-            if(this.printAnswers)console.log("-" + quantity + " " + item + " was updated from the cart!");
+            this.dec.get(this.clientId).set(item,[notBought+Math.min(quantity, totalQuantity),bought]);
+            if(this.printAnswers)console.log("-" + Math.min(quantity, totalQuantity) + " " + item + " was updated from the cart!");
         }else{
-            this.removeProduct(item);
-            //this.dec.get(this.clientId).set(item,[quantity,0]);
-            if(this.printAnswers)console.log(item + " was deleted from the cart!");
+            const totalQuantity = this.calcTotal(item);
+            if(quantity >= totalQuantity) this.removeProduct(item);
+            else this.dec.get(this.clientId).set(item,[Math.min(quantity, totalQuantity),0]);
+            if(this.printAnswers)console.log("-" + Math.min(quantity, totalQuantity) + " " + item + " was updated from the cart!");
         }
     }
     /**

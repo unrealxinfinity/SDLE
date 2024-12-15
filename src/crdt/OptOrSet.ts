@@ -179,7 +179,7 @@ export default class OptOrSet{
     private vectorMax(vectorclockA:Map<string,number>,vectorclockB:Map<string,number>){
         vectorclockB.forEach((otherVersion,otherClient)=>{
             if(vectorclockA.get(otherClient)!==undefined){
-                let thisVersion = vectorclockA.get(this.clientId)
+                let thisVersion = vectorclockA.get(otherClient)
                 const maxVer = Math.max(thisVersion,otherVersion)
                 vectorclockA.set(otherClient,maxVer);
             }

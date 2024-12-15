@@ -33,14 +33,13 @@ const users : Map<string, user> = new Map();
 const frontAddr = "tcp://127.0.0.1:12346";
 
 
-zmq.context.blocky = false;
 
-const clients = 2;
-const num_of_lists = 2;
-const testingTime = 12;
-let automatedTesting = false;
+const clients = 10;
+const num_of_lists = 3;
+const testingTime = 20;
+let automatedTesting = true;
 let persist = false;
-const debug : [string, string] | null = null;//["1734145739107", "./listLogs/List2.txt"];
+const debug : [string, string] | null = null;//["Client8", "./listLogs/List2.txt"];
 
 
 
@@ -54,33 +53,21 @@ function readFromLocalStorage(userName : string | null){
         for(const shoppingListId in localStorageContents){
             if(shoppingListId == "name") break;
             const shoppingListContents = localStorageContents[shoppingListId];
-            const crdt = new PNShoppingMap(userName, shoppingListId);
             user.lists.set(shoppingListContents["listName"], shoppingListId);
             
-            for(const userID in shoppingListContents["inc"]){
-                for(const itemName in shoppingListContents["inc"][userID]){
-                    const [quantity, quantityBought] = shoppingListContents["inc"][userID][itemName]
-                    crdt.addInc(userName, itemName, quantity, quantityBought);
-                }
-            }
-            for(const userID in shoppingListContents["dec"]){
-                for(const itemName in shoppingListContents["dec"][userID]){
-                    const [quantity, quantityBought] = shoppingListContents["dec"][userID][itemName]
-                    crdt.addDec(userName, itemName, quantity, quantityBought);
-                }
-            }
+            const crdt = PNShoppingMap.fromJSON(shoppingListContents["crdt"], user.name, shoppingListId);
             const state : state = {shoppingListId: shoppingListId, crdt: crdt, sock: null}; 
             user.state = state;
             user.states.set(shoppingListId, state);
             users.set(userName, user);
         }
-        if(automatedTesting) taskManager.pushAnswer("Login was successfull, loaded data from localStorage");
+        if(automatedTesting) taskManager.pushAnswer("Login was successfull, loaded data from localStorage", "");
     }
     else if(automatedTesting && !users.has(userName)){
-        taskManager.pushAnswer("Login was successfull, started a new user");
+        taskManager.pushAnswer("Login was successfull, started a new user", "");
     }
     else if(automatedTesting){
-        taskManager.pushAnswer("Login was successfull");
+        taskManager.pushAnswer("Login was successfull", "");
     }
 }
 
@@ -91,17 +78,18 @@ function generateGUId() : string {
 }
 
 
+function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
+    return new Promise((resolve) => {
+        rl.question(text, (answer) => {
+            resolve(answer);
+        });
+    });
+}
 
 async function handleInput(user : user){
 
 
-    function createQuestion(rl : readline.Interface, text : string) : Promise<string> {
-        return new Promise((resolve) => {
-            rl.question(text, (answer) => {
-                resolve(answer);
-            });
-        });
-    }
+
     
     function viewShoppingList(state : state){
         console.log("                SHOPPING LIST              \n");
@@ -157,16 +145,17 @@ async function handleInput(user : user){
         if(!user.states.has(name)){
             let id = generateGUId();
             if(automatedTesting)id = id = user.name.slice(6);
+            if(debug != null) id = name;
             const newState : state = {shoppingListId: id, crdt: new PNShoppingMap(user.name, id), sock: null}
             user.lists.set(name, id);
             user.states.set(id, newState);
             user = pickShoppingList(name, user);
             console.log("Successfully created shopping list " + name + " with id = " + id + '\n');
-            if(automatedTesting) taskManager.pushAnswer("Successfully created shopping list " + id);
+            if(automatedTesting) taskManager.pushAnswer("Successfully created shopping list " + id, user.state.crdt.toJSON());
         }
         else{
             console.log("The list with that name already exists. I'm sorry\n");
-            if(automatedTesting) taskManager.pushAnswer("Unsuccessfully created shopping list");
+            if(automatedTesting) taskManager.pushAnswer("Unsuccessfully created shopping list", user.state.crdt.toJSON());
         }
 
         return user;
@@ -189,10 +178,8 @@ async function handleInput(user : user){
         try {
             const fetchReply = JSON.parse((await state.sock.receive()).toString());
             console.log(fetchReply.message);
-            console.log(fetchReply);
             if(fetchReply.type == "fetch"){
                 const incoming_crdt = PNShoppingMap.fromJSON(fetchReply.list);
-                console.log(incoming_crdt);
                 state.crdt.join(incoming_crdt);
                 if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pulled!\n");
                 return true;
@@ -201,8 +188,8 @@ async function handleInput(user : user){
             console.log("Pull failed.");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
             state.sock.connect(frontAddr);
-            if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled");
         }
+        if(automatedTesting) taskManager.pushAnswer("Unsucessfully pulled", "");
         return false;
     }
 
@@ -217,9 +204,6 @@ async function handleInput(user : user){
             list: state.crdt.toJSON()
         };
 
-        console.log(state.crdt);
-        console.log(state.crdt.toJSON());
-        console.log(PNShoppingMap.fromJSON(state.crdt.toJSON()))
         
         const updateRequest = await state.sock.send(JSON.stringify(updateMsg));
     
@@ -227,8 +211,9 @@ async function handleInput(user : user){
             const updateReply = JSON.parse((await state.sock.receive()).toString());
 
             console.log(updateReply.message);
-        } catch (e) {
             if(automatedTesting) taskManager.pushCartContents(state.crdt, "Successfully pushed!\n");
+        } catch (e) {
+            if(automatedTesting) taskManager.pushCartContents(state.crdt, "UnSuccessfully pushed!\n");
             state.sock = new zmq.Request({sendTimeout: 1000, receiveTimeout: 2000});
             state.sock.connect(frontAddr);
             console.log("Push failed.");
@@ -243,46 +228,31 @@ async function handleInput(user : user){
                     const data = {}
                     for(const state of user.states.values()){
     
-                    const crdt_json = JSON.parse(state.crdt.toJSON());
+                    
 
     
-                    let listName = "";
-                        for(const [name, id] of user.lists){
-                        if(id == state.shoppingListId){
-                            listName = name;
+                        let listName = "";
+                            for(const [name, id] of user.lists.entries()){
+                            if(id == state.shoppingListId){
+                                listName = name;
+                            }
                         }
+        
+                        data[state.shoppingListId] = {
+                            "listName": listName,
+                            "crdt": state.crdt.toJSON()
+                        };   
+    
                     }
-    
-                    data[state.shoppingListId] = {
-                        "listName": listName,
-                        "inc": crdt_json.inc,
-                        "dec": crdt_json.dec
-                    };   
-    
-                }
-                try{
-                    fs.writeFileSync('localStorage/'+user.name+'.json', JSON.stringify(data, null, 2), 'utf8')
-                } catch(error){
-                    console.log("Couldn't write to file");
-                }
+                    try{
+                        fs.writeFileSync('localStorage/'+user.name+'.json', JSON.stringify(data, null, 2), 'utf8')
+                    } catch(error){
+                        console.log("Couldn't write to file");
+                    }
                 }
                 persist = true;
             }
         }, 10)
-    }
-
-    function jumpToCommand(commands : Array<string>){
-        /*const debugPoint = debug[0];
-        const filePath = debug[1];
-        const fileContents = fs.readFileSync(filePath, 'utf-8');
-
-        const splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
-        for(const splittedContent of splittedContents){
-            const splittedListContents = splittedContent.split(/[\s]+/);
-            const splittedListContentsLines = splittedContent.split(/[\n]+/);
-            if(splittedListContents[4])
-        }*/
-
     }
 
     
@@ -317,12 +287,11 @@ async function handleInput(user : user){
     let persistingDataInterval = null;
 
     let text : string = login_text;
-    let userName : string = null;
     let rl : readline.Interface = null;
 
     
     const commands : Array<string> = []//readJsonFile('./test').commands;
-    if(debug !== null) jumpToCommand(commands);
+
 
     while(true){
         if(automatedTesting && user.consoleState == ConsoleState.LOGIN && commands.length == 0) await taskManager.manageLogin(commands, process.env.USERNAME, num_of_lists, testingTime);
@@ -383,8 +352,9 @@ async function handleInput(user : user){
                         }
                         const allItems = user.state.crdt.getAllItems();
                         if(allItems.has(itemName)){
-                            user.state.crdt.remove(itemName, itemQuantity);
-                        if(automatedTesting) {
+                            const totalQuant = user.state.crdt.calcTotal(itemName);
+                            user.state.crdt.remove(itemName, Math.min(itemQuantity, totalQuant));
+                            if(automatedTesting) {
                                 taskManager.pushCartContents(user.state.crdt, "");
                             }
                         }
@@ -418,7 +388,7 @@ async function handleInput(user : user){
                     else if(command == "pick" && answerArrayLength == 2){
                         const listName : string = answerArray[1];
                         user = pickShoppingList(listName, user);
-                        if(automatedTesting) taskManager.pushAnswer("Picked list Successfully!");
+                        if(automatedTesting) taskManager.pushAnswer("Picked list Successfully!", "");
                         viewShoppingList(user.state);
                         text = initial_text;
                     }
@@ -446,7 +416,7 @@ async function handleInput(user : user){
 
             }
             if(command == "close" && answerArrayLength == 1){
-                if(automatedTesting) taskManager.pushAnswer("Successfully closed the System");
+                if(automatedTesting) taskManager.pushAnswer("Successfully closed the System", user.state.crdt.toJSON());
                 break;
             }
         }
@@ -460,9 +430,11 @@ async function handleInput(user : user){
         }, 11);
     }
 
-    for(const userState of user.states.values()){
-        if(userState.sock != null){
-            userState.sock.close();
+    for(const user_ of users.values()){
+        for(const userState of user_.states.values()){
+            if(userState.sock != null){
+                userState.sock.close();
+            }
         }
     }
 
@@ -490,11 +462,15 @@ function createLogs(){
         return products;
     }
 
-    function pull(clientProducts : [Map<string, number>, Map<string, number>, number], changes : Array<[string, Map<string, number>]>, client : string){
-        for(let i = clientProducts[2]; i < changes.length; i++){
-            const [changeClient, change] = changes[i];
+    function pull(clientProducts : [Map<string, number>, Map<string, number>, number], changes : Array<[string, Map<string, number>]>, client : string, index : number){
+        if(index == -1){
+            clientProducts[2] = index + 1;
+            return true;
+        }
+        if(index < changes.length){
+            const [changeClient, change] = changes[index];
             if(changeClient != client){
-                for(const [itemName, changedQuantity] of change){
+                for(const [itemName, changedQuantity] of change.entries()){
                     if(clientProducts[0].has(itemName)){
                         const currentQuantity = clientProducts[0].get(itemName);
                         clientProducts[0].set(itemName, currentQuantity+changedQuantity);
@@ -504,15 +480,19 @@ function createLogs(){
                     }
                 }
             }
+            clientProducts[2] = index + 1;
+            return true;
         }
-        clientProducts[2] = changes.length;
+        return false;
+
     }
 
     const timeline : Array<number> = [];
     const contents : Map<number, Array<string>> = new Map();
+    const basePath : string = "./"
 
     for(let client = 1; client <= clients; client++){
-        const fileContent = fs.readFileSync("./clientLogs/Client" + client + ".txt", 'utf-8');
+        const fileContent = fs.readFileSync(basePath + "clientLogs/Client" + client + ".txt", 'utf-8');
         const splittedContent = fileContent.split(/\n\s*\n/).map(entry => entry.trim());
         for(const content of splittedContent){
             const match = content.match(/^(\d+)\s+Action:/);
@@ -526,8 +506,8 @@ function createLogs(){
                 }
                 else{
                     contents.set(time, [content]);
+                    timeline.push(time);
                 }
-                timeline.push(time);
             }
         }
     }
@@ -560,8 +540,8 @@ function createLogs(){
     const testResults : [number, number, Array<string>] = [0, 0, []];
     const availableActions : Array<string> = ["Added", "Removed", "Pulled"];
     
-    for(const [listID, listContents] of listLogs){
-        fs.writeFileSync("./listLogs/List" + listID + ".txt", listContents,'utf8');
+    for(const [listID, listContents] of listLogs.entries()){
+        fs.writeFileSync(basePath + "listLogs/List" + listID + ".txt", listContents,'utf8');
         const splittedContents = listContents.split(/\n\s*\n/).map(entry => entry.trim());
         const clientProducts : Map<string, [Map<string, number>, Map<string, number>, number]>= new Map();
         const serverProducts : Map<string, number> = new Map();
@@ -570,8 +550,12 @@ function createLogs(){
             const splittedListContents = splittedContent.split(/[\s]+/);
             const splittedListContentsLines = splittedContent.split(/[\n]+/);
             const client = splittedListContents[2];
+            const debugging : boolean = listID == 3 && splittedListContents[0] == "1734213523788";
+            if(debugging){
+                const a = true;
+            }
             if(!clientProducts.has(client)){
-                clientProducts.set(client, [new Map(), new Map(), 0]);
+                clientProducts.set(client, [new Map(), new Map(), -1]);
             }
             let prevClientProducts =  clientProducts.get(client);
             let action = splittedListContents[3];
@@ -579,6 +563,10 @@ function createLogs(){
             if(action == "Fetched") action = "Pulled";
             let passedTest : boolean = true;
             if(action == "Added"){
+                if(debugging){
+                    const a = 3;
+                    console.log(prevClientProducts[0])
+                }
                 const quantity = Number(splittedListContents[4].slice(0, splittedListContents[4].length-1));
                 let itemName = "";
                 let index = 5;
@@ -605,8 +593,13 @@ function createLogs(){
                     prevClientProducts[1].set(itemName, quantity);
                 }
 
+                if(debugging){
+                    const a = 3;
+                    console.log(prevClientProducts[0])
+                }
+
                 const resultedProducts = createList(splittedListContentsLines, 1);
-                for(const [prodName, prodQuant] of resultedProducts){
+                for(const [prodName, prodQuant] of resultedProducts.entries()){
                     if(!prevClientProducts[0].has(prodName)) {
                         passedTest = false;
                         break;
@@ -618,7 +611,20 @@ function createLogs(){
                     }
 
                 }
+                if(passedTest){
+                    for(const [prodName, prodQuant] of prevClientProducts[0].entries()){
+                        if(!resultedProducts.has(prodName)){
+                            passedTest = false;
+                            break;
+                        }
+                    }
+                }
+                if(debugging){
+                    const a = 3;
+                    console.log(prevClientProducts[0], resultedProducts, passedTest)
+                }
                 prevClientProducts[0] = structuredClone(resultedProducts);
+
             }
             else if(action == "Removed"){
                 const quantity = Number(splittedListContents[4].slice(0, splittedListContents[4].length-1));
@@ -645,7 +651,7 @@ function createLogs(){
                 }
 
                 const resultedProducts = createList(splittedListContentsLines, 1);
-                for(const [prodName, prodQuant] of resultedProducts){
+                for(const [prodName, prodQuant] of resultedProducts.entries()){
                     if(!prevClientProducts[0].has(prodName)) {
                         passedTest = false;
                         break;
@@ -655,12 +661,19 @@ function createLogs(){
                         passedTest = false;
                         break;
                     }
-
+                }
+                if(passedTest){
+                    for(const [prodName, prodQuant] of prevClientProducts[0].entries()){
+                        if(!resultedProducts.has(prodName)){
+                            passedTest = false;
+                            break;
+                        }
+                    }
                 }
                 prevClientProducts[0] = structuredClone(resultedProducts);
             }
             else if(action == "Pushed"){
-                for(const [itemName, quantity] of prevClientProducts[1]){
+                for(const [itemName, quantity] of prevClientProducts[1].entries()){
                     if(serverProducts.has(itemName)){
                         const serverProductQuantity = serverProducts.get(itemName);
                         const offset = quantity+serverProductQuantity;
@@ -681,22 +694,35 @@ function createLogs(){
                 prevClientProducts[1].clear();
             }
             else if(action == "Pulled"){
-                pull(prevClientProducts, changes, client)
-
                 const pulledProducts = createList(splittedListContentsLines, 2);
-                for(const [prodName, prodQuant] of pulledProducts){
-                    if(!prevClientProducts[0].has(prodName)) {
-                        passedTest = false;
-                        break;
+                while(pull(prevClientProducts, changes, client, prevClientProducts[2])){
+                    passedTest = true;
+                    for(const [prodName, prodQuant] of pulledProducts.entries()){
+                        if(!prevClientProducts[0].has(prodName)) {
+                            passedTest = false;
+                            break;
+                        }
+                        const prevClientProductQuantity = prevClientProducts[0].get(prodName);
+                        if(prevClientProductQuantity != prodQuant){
+                            passedTest = false;
+                            break;
+                        }
+    
                     }
-                    const prevClientProductQuantity = prevClientProducts[0].get(prodName);
-                    if(prevClientProductQuantity != prodQuant){
-                        passedTest = false;
-                        break;
+                    if(passedTest){
+                        for(const [prodName, prodQuant] of prevClientProducts[0].entries()){
+                            if(!pulledProducts.has(prodName)){
+                                passedTest = false;
+                                break;
+                            }
+                        }
                     }
-
+                    if(passedTest)break;
                 }
                 prevClientProducts[0] = structuredClone(pulledProducts);
+
+                
+                //prevClientProducts[0] = structuredClone(pulledProducts);
             }
 
             if(availableActions.includes(action)){
@@ -718,6 +744,62 @@ function createLogs(){
 
     fs.writeFileSync("./generalLogs.txt", inOrderLog,'utf8')
     
+    return testResults[2];
+}
+
+
+async function debugMode(){
+
+
+    const debugName = debug[0];
+    const filePath = debug[1];
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
+
+    const splittedContents = fileContents.split(/\n\s*\n/).map(entry => entry.trim());
+    let current_userName : string = "";
+    const rl : readline.Interface = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    for(let index = 0; index < splittedContents.length; index++){
+        const splittedContent = splittedContents[index];
+        const splittedListContents = splittedContent.split(/[\s]+/);
+        const splittedListContentsLines = splittedContent.split(/[\n]+/);
+        const userName = splittedListContents[2];
+        const action = splittedListContents[3];
+
+        if(userName == debugName){
+            if(action == "Added" || action == "Removed" || action == "Pulled"){
+                console.log(splittedContent + '\n');
+                while(true){
+                    const answer = await createQuestion(rl, "");
+                    const answerArray : Array<string> = answer.split(" ");
+                    const answerArrayLength = answerArray.length;
+                    if(answerArrayLength == 1){
+                        if(answerArray[0] == "next"){
+                            console.clear();
+                            break;
+                        }
+                        else if(answerArray[0] == "back"){
+                            console.clear();
+                            index = Math.max(-1, index - 2)
+                            break;
+                        }
+                        else if(answerArray[0] == "close"){
+                            if(rl != null) rl.close();
+                            return;
+                        }
+                    }
+        
+                }
+            }
+        }
+
+
+    }
+    
+
 
 }
 
@@ -748,7 +830,8 @@ if(cluster.isPrimary && automatedTesting){
 else{
     let user : user = {name: null, state: null, states: null, lists: null, consoleState: ConsoleState.LOGIN};
 
-    await handleInput(user);
+    if(debug != null)await debugMode()
+    else await handleInput(user);
     if(automatedTesting) {
         taskManager.writeLog();
         process.disconnect();
