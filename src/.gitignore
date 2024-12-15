@@ -4,5 +4,5 @@ clientLogs/*
 listLogs/*
 crdtLogs/*
 generalLogs.txt
-localStorage/*
-serverStorage/*
+localStorage/*.json
+serverStorage/*.json
