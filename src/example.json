@@ -1,0 +1,14 @@
+{
+    "commands":[
+        "login clientA",
+        "create clientAList",
+        "add 3 grape",
+        "rem 1 grape",
+        "push",
+        "add 5 banana",
+        "pull",
+        "del grape",
+        "push",
+        "close"
+    ]
+}
