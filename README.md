@@ -2,7 +2,7 @@
 
 SDLE Second Assignment of group T03G16.
 
-Details are in the docs folder.
+Details are in the doc folder.
 
 Group members:
 
