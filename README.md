@@ -2,6 +2,8 @@
 
 SDLE Second Assignment of group T03G16.
 
+Details are in the docs folder.
+
 Group members:
 
 1. Afonso Vaz Osório (up202108700@up.pt)
